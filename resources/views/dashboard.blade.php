@@ -31,9 +31,13 @@
 @section('title', 'Dashboard')
 
 @section('content')
+
 <div class="container-fluid px-4 py-3">
     
     <div class="row mb-4">
+
+<div class="container-fluid">
+    <div class="row mb-10">
         <div class="col-md-12">
             <h3 class="fw-bold text-dark mb-1">Selamat Datang, {{ ucfirst(Auth::user()->role) }}</h3>
             <p class="text-muted">Berikut adalah rangkuman aktivitas sistem PKSD-Inventory hari ini.</p>
@@ -124,7 +128,9 @@
                                     <th class="ps-4">Kode</th>
                                     <th>Nama Bahan Baku</th>
                                     <th>Jenis</th>
+                                    <th>Kualitas</th>
                                     <th>Ukuran</th>
+                                    <th>Lokasi</th>
                                     <th>Sisa Stok</th>
                                     <th>Stok Minimum</th>
                                     <th class="text-center">Status</th>
@@ -140,7 +146,17 @@
                                                 {{ $item->jenis_material }}
                                             </span>
                                         </td>
+                                        <td>
+                                            <span class="text-dark fw-medium">{{ $item->kualitas ?? '-' }}</span>
+                                            </td>
                                         <td>{{ $item->size }} {{ $item->satuan }}</td>
+                                        <td>
+                                            @if($item->lokasi_gudang || $item->blok_area)
+                                               <small class="text-muted">{{ $item->lokasi_gudang ?? '-' }} ({{ $item->blok_area ?? '-' }})</small>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
                                         <td class="text-danger fw-bold">{{ $item->stok_sekarang }}</td>
                                         <td class="text-muted">{{ $item->stok_minimum }}</td>
                                         <td class="text-center">
