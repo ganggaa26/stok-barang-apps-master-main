@@ -21,14 +21,14 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama_Kategori' => 'required|string|max:255',
-            'jenis_material' => 'required|string|max:255',
+            'nama_kategori' => 'required|string|max:255',
+            'tipe_material' => 'required|string|max:255',
             
         ]);
 
         Category::create([
-            'nama_Kategori' => $request->nama_Kategori,
-            'jenis_material' => $request->jenis_material,
+            'nama_kategori' => $request->nama_kategori,
+            'tipe_material' => $request->tipe_material,
             
         ]);
       
@@ -55,4 +55,4 @@ class CategoryController extends Controller
         }
 
         
-}
+}h
