@@ -34,16 +34,15 @@
 
 <div class="container-fluid px-4 py-3">
     
+    <!-- Ucapan Selamat Datang -->
     <div class="row mb-4">
-
-<div class="container-fluid">
-    <div class="row mb-10">
         <div class="col-md-12">
             <h3 class="fw-bold text-dark mb-1">Selamat Datang, {{ ucfirst(Auth::user()->role) }}</h3>
             <p class="text-muted">Berikut adalah rangkuman aktivitas sistem PKSD-Inventory hari ini.</p>
         </div>
     </div>
 
+    <!-- Ringkasan Grid Card Stats (Top) -->
     <div class="row g-4 mb-5">
         <div class="col-xl-3 col-md-6 col-12">
             <div class="card border-0 shadow-sm p-3">
@@ -53,7 +52,7 @@
                         <h3 class="fw-bold mb-0 mt-1">{{ $totalMaterial ?? '0' }}</h3>
                         <small class="text-muted">Jumlah material unik</small>
                     </div>
-                    <div class="icon-shape bg-light-primary text-primary d-flex align-items-center justify-content-center" style="background-color: #eef2ff; color: #4f46e5;">
+                    <div class="icon-shape bg-light-primary text-primary d-flex align-items-center justify-content-center" style="background-color: #00FF00; color: #2f27ca;">
                         <i data-feather="box" style="width: 24px; height: 24px;"></i>
                     </div>
                 </div>
@@ -68,7 +67,7 @@
                         <h3 class="fw-bold mb-0 mt-1">{{ $totalSupplier ?? '0' }}</h3>
                         <small class="text-muted">Pemasok terjalin</small>
                     </div>
-                    <div class="icon-shape bg-light-info text-info d-flex align-items-center justify-content-center" style="background-color: #ecfdf5; color: #059669;">
+                    <div class="icon-shape bg-light-info text-info d-flex align-items-center justify-content-center" style="background-color: #0000FF; color: #059669;">
                         <i data-feather="users" style="width: 24px; height: 24px;"></i>
                     </div>
                 </div>
@@ -106,9 +105,11 @@
         </div>
     </div>
 
+    <!-- Bagian Utama: Tabel Peringatan Stok & Grafik Aktivitas -->
     <div class="row g-4">
         
-        <div class="col-xl-8 col-lg-8 col-md-12 col-12">
+        <!-- Tabel Peringatan (Diperlebar menjadi col-12 agar pas di layar dashboard utama) -->
+        <div class="col-xl-12 col-lg-12 col-md-12 col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3 d-flex align-items-center border-bottom">
                     <div class="bg-danger-soft text-danger p-2 rounded-3 me-3" style="background-color: #fee2e2; border-radius: 0.5rem;">
@@ -148,7 +149,7 @@
                                         </td>
                                         <td>
                                             <span class="text-dark fw-medium">{{ $item->kualitas ?? '-' }}</span>
-                                            </td>
+                                        </td>
                                         <td>{{ $item->size }} {{ $item->satuan }}</td>
                                         <td>
                                             @if($item->lokasi_gudang || $item->blok_area)
@@ -165,7 +166,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center py-5 text-muted">
+                                        <td colspan="9" class="text-center py-5 text-muted">
                                             <i data-feather="check-circle" class="text-success mb-2" style="width: 40px; height: 40px;"></i>
                                             <p class="mb-0 fw-bold">Semua aman! Tidak ada material yang kehabisan stok.</p>
                                         </td>
@@ -178,13 +179,14 @@
             </div>
         </div>
 
-        <div class="col-xl-4 col-lg-4 col-md-12 col-12">
-            <div class="card border-0 shadow-sm p-4 h-100">
+        <!-- Bagian Grafik Aktivitas Gudang -->
+        <div class="col-12 mt-4">
+            <div class="card border-0 shadow-sm p-4">
                 <div class="mb-3">
                     <h4 class="fw-bold text-dark mb-0">Aktivitas Gudang: 7 Hari Terakhir</h4>
                     <small class="text-muted">Perbandingan log barang masuk dan keluar</small>
                 </div>
-                <div style="position: relative; height: 320px; width: 100%;">
+                <div style="position: relative; height: 150px; width: 100%;">
                     <canvas id="aktivitasGudangChart"></canvas>
                 </div>
             </div>
@@ -211,13 +213,13 @@
                 datasets: [
                     {
                         label: 'Barang Masuk',
-                        data: [1100, 800, 1400, 1500, 700, 900, 1400], // Sesuai visual tiruan gambar target
+                        data: [1100, 800, 1400, 1500, 700, 900, 1400], 
                         backgroundColor: '#3b82f6', // Biru terang
                         borderRadius: 4
                     },
                     {
                         label: 'Barang Keluar',
-                        data: [1250, 600, 700, 800, 400, 0, 500], // Sesuai visual tiruan gambar target
+                        data: [1250, 600, 700, 800, 400, 0, 500], 
                         backgroundColor: '#f97316', // Orange terang
                         borderRadius: 4
                     }

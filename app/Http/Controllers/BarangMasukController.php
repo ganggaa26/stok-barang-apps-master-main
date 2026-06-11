@@ -3,48 +3,80 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\BahanPokok; // Sesuaikan dengan nama Model Eloquent Anda
 
-class BarangMasukController extends Controller
+class BahanPokokController extends Controller
 {
-    // Fungsi Utama untuk Memproses Data Form Barang Masuk
+    // 1. Menampilkan Form Input Utama
+    public function index()
+    {
+        return view('pokok'); 
+    }
+
+    // 2. Menerima data Form dan Menyimpannya ke Database
     public function store(Request $request)
     {
-        // 1. Validasi data yang dikirim dari halaman web
-        $request->validate([
-            'material_id' => 'required',
-            'jumlah_masuk' => 'required|numeric|min:1',
-            'tanggal_masuk' => 'required|date',
+        // Validasi input data logistik & spesifikasi dinamis
+        $validated = $request->validate([
+            'sub_kategori'       => 'required',
+            'item_barang'        => 'required',
+            'jenis_transaksi'    => 'required',
+            'tanggal'            => 'required|date',
+            'quantity'           => 'required|numeric',
+            'asal_supplier'      => 'nullable|string',
+            'nama_proyek'        => 'nullable|string',
+            // Atribut spesifikasi opsional tergantung sub_kategori
+            'tebal_kayu'         => 'nullable|numeric',
+            'lebar_kayu'         => 'nullable|numeric',
+            'panjang_kayu'       => 'nullable|numeric',
+            'grade_kayu'         => 'nullable|string',
+            'lokasi_gudang'      => 'nullable|string',
+            'detail_merk'        => 'nullable|string',
+            'detail_spesifikasi' => 'nullable|string',
+            'no_bendel'          => 'nullable|string',
+            'tebal_veneer'       => 'nullable|numeric',
+            'lebar_veneer'       => 'nullable|numeric',
+            'panjang_veneer'     => 'nullable|numeric',
         ]);
 
-        // 2. Ambil spesifikasi ukuran material dari database
-        $material = DB::table('materials')->where('id', $request->material_id)->first();
+        // Simpan Log Transaksi
+        BahanPokok::create($validated);
 
-        // 3. JALUR RUMUS KUBIKASI DARI IBU INDUSTRI
-        if ($material->tebal != null && $material->panjang != null) {
-            // Rumus: (Tebal cm / 100) x Panjang meter x Jumlah Batang
-            $tebalMeter = $material->tebal / 100;
-            $totalKubikasi = $tebalMeter * $material->panjang * $request->jumlah_masuk;
-        } else {
-            // Jika bukan kayu (seperti lem/baut), kubikasinya otomatis diisi 0
-            $totalKubikasi = 0;
+        // Jika transaksi adalah barang masuk/stok awal, arahkan ke laporan barang masuk
+        if (in_array($request->jenis_transaksi, ['Barang Masuk', 'Stok Awal'])) {
+            return redirect()->route('laporan.masuk')->with('success', 'Material baru berhasil didaftarkan ke gudang!');
         }
 
-        // 4. Simpan riwayat transaksi ke tabel barang_masuk
-        DB::table('barang_masuk')->insert([
-            'material_id' => $request->material_id,
-            'jumlah_masuk' => $request->jumlah_masuk,
-            'total_kubikasi' => $totalKubikasi, // Hasil rumus otomatis tersimpan!
-            'tanggal_masuk' => $request->tanggal_masuk,
-            'created_at' => now(),
-            'updated_at' => now(),
+        return redirect()->back()->with('success', 'Transaksi keluar berhasil dicatat.');
+    }
+
+    // 3. Menampilkan Halaman Laporan Terpisah (Otomatis Tersambung)
+    public function laporanMasuk()
+    {
+        // HANYA MENGAMBIL: "Barang Masuk" dan "Stok Awal"
+        $barangMasuk = BahanPokok::whereIn('jenis_transaksi', ['Barang Masuk', 'Stok Awal'])
+                                 ->orderBy('tanggal', 'desc')
+                                 ->get();
+
+        // LOGIKA MENGHITUNG STATISTIK SECARA REAL-TIME
+        $totalVolume = 0;
+        $totalLembar = 0;
+
+        foreach ($barangMasuk as $item) {
+            if ($item->sub_kategori === 'kayu_solid') {
+                // Konversi rumus kubikasi ke M3
+                $totalVolume += (($item->tebal_kayu * $item->lebar_kayu * $item->panjang_kayu) / 1000000) * $item->quantity;
+            } else {
+                // Jumlah lembaran untuk Plywood, HPL, Veneer
+                $totalLembar += $item->quantity;
+            }
+        }
+
+        return view('laporan-masuk', [
+            'barangMasuk'    => $barangMasuk,
+            'totalVolume'    => $totalVolume,
+            'totalLembar'    => $totalLembar,
+            'totalTransaksi' => $barangMasuk->count()
         ]);
-
-        // 5. Update & Tambah stok fisik utama di tabel materials (Satuan Pcs/Batang)
-        DB::table('materials')
-            ->where('id', $request->material_id)
-            ->increment('stok_sekarang', $request->jumlah_masuk);
-
-        // 6. Kembali ke halaman form dengan pesan sukses
-        return redirect()->back()->with('success', 'Transaksi berhasil disimpan! Rumus kubikasi otomatis diaplikasikan.');
     }
 }
