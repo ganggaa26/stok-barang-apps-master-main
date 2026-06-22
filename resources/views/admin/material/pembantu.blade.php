@@ -109,11 +109,12 @@
                         <th class="p-4 font-medium">Spesifikasi Detail</th>
                         <th class="p-4 font-medium text-right">Kuantitas</th>
                         <th class="p-4 font-medium">Alokasi / Informasi</th>
+                        <th class="p-4 font-medium text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="badanTabelLog" class="divide-y divide-slate-100 bg-white">
                     <tr id="barisKosong">
-                        <td colspan="6" class="p-8 text-center text-slate-400 italic bg-slate-50/30">
+                        <td colspan="7" class="p-8 text-center text-slate-400 italic bg-slate-50/30">
                             Belum ada pemakaian bahan pembantu yang diinput.
                         </td>
                     </tr>
@@ -177,7 +178,6 @@
         wrapper.classList.remove('hidden');
         areaForm.innerHTML = "";
 
-        // Menggunakan grid horizontal md:grid-cols-3 / md:grid-cols-4 agar form memanjang ke samping
         const inputClass = "w-full border border-slate-200 p-3 text-sm rounded-xl focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none bg-white transition";
 
         if (item === 'Lem') {
@@ -228,7 +228,7 @@
                 </div>
                 <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Satuan Input Utama</label>
                     <select id="a_satuan" class="${inputClass}" onchange="hitungKonversiAmplas()">
-                        <option value="Roll">1 Roll (50 M)</option><option value="Lembaran">Lembaran</option><option value="Pcs</option>
+                        <option value="Roll">1 Roll (50 M)</option><option value="Lembaran">Lembaran</option><option value="Pcs">Pcs</option>
                     </select>
                 </div>
                 <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Jumlah</label><input type="number" id="a_qty" value="1" class="${inputClass}" oninput="hitungKonversiAmplas()" required></div>
@@ -247,10 +247,10 @@
 
         if (sat === 'Roll') {
             const totalMeter = val * 50;
-            preview.innerText = `Matriks Gudang: Input ${val} Roll = Otomatis kalkulasi ${totalMeter} Meter Stok Induk.`;
+            if(preview) preview.innerText = `Matriks Gudang: Input ${val} Roll = Otomatis kalkulasi ${totalMeter} Meter Stok Induk.`;
             return `${totalMeter} Meter`;
         } else {
-            preview.innerText = `Matriks Gudang: Dicatat flat sesuai nominal unit: ${val} ${sat}.`;
+            if(preview) preview.innerText = `Matriks Gudang: Dicatat flat sesuai nominal unit: ${val} ${sat}.`;
             return `${val} ${sat}`;
         }
     }
@@ -259,6 +259,7 @@
         const item = document.getElementById('itemBarang').value;
         if (!item) { alert('Silakan tentukan item material pembantu!'); return; }
 
+        const sub = document.getElementById('subKategori').value;
         const tgl = document.getElementById('tglTransaksi').value;
         const jenis = document.getElementById('jenisTransaksi').value;
         const emptyRow = document.getElementById('barisKosong');
@@ -267,12 +268,17 @@
         let kuantitasFinal = "";
         let logistikKet = "";
 
+        // Objek penampung metadata payload asli untuk fitur edit balik form
+        let metaPayload = { sub: sub, item: item, jenis: jenis, tgl: tgl };
+
         if (jenis === 'Barang Keluar') {
             const proyek = document.getElementById('namaProyek').value || "Project Global";
             logistikKet = `<span class="flex items-center gap-1 text-rose-600 font-medium">🔴 Keluar Ke: <b class="text-slate-800">${proyek}</b></span>`;
+            metaPayload.proyek = proyek;
         } else {
             const asal = document.getElementById('asalBarang').value || "Stok Gudang Awal";
             logistikKet = `<span class="flex items-center gap-1 text-emerald-600 font-medium">🟢 Masuk Dari: <b class="text-slate-800">${asal}</b></span>`;
+            metaPayload.asal = asal;
         }
 
         if (item === 'Lem') {
@@ -281,6 +287,7 @@
             const qty = document.getElementById('p_qty').value;
             kuantitasFinal = `${qty} ${sat}`;
             detailKarakteristik = `Jenis Perekat: ${namaLem}`;
+            metaPayload.spek = { namaLem: namaLem, sat: sat, qty: qty };
         } 
         else if (item === 'Sekrup') {
             const merk = document.getElementById('s_merk').value || "-";
@@ -289,6 +296,7 @@
             const qty = document.getElementById('s_qty').value;
             kuantitasFinal = `${qty} ${sat}`;
             detailKarakteristik = `Merk: ${merk} | Spek: ${uk}`;
+            metaPayload.spek = { merk: merk, uk: uk, sat: sat, qty: qty };
         }
         else if (item === 'Cat' || item === 'Thinner' || item === 'Cairan Kimia H2O2') {
             const merk = document.getElementById('c_merk').value || "-";
@@ -296,6 +304,7 @@
             const qty = document.getElementById('c_qty').value;
             kuantitasFinal = `${qty} Liter`;
             detailKarakteristik = `Merk: ${merk} | Spek: ${jns}`;
+            metaPayload.spek = { merk: merk, jns: jns, qty: qty };
         }
         else if (item === 'Amplas') {
             const merk = document.getElementById('a_merk').value || "-";
@@ -310,13 +319,15 @@
                 kuantitasFinal = `${qty} ${sat}`;
                 detailKarakteristik = `Merek: ${merk} | Grit: ${grit}`;
             }
+            metaPayload.spek = { merk: merk, grit: grit, sat: sat, qty: qty };
         }
 
         if (emptyRow) emptyRow.remove();
 
         const tbody = document.getElementById('badanTabelLog');
         const row = document.createElement('tr');
-        row.className = "hover:bg-slate-50/80 text-slate-700 transition border-b border-slate-100";
+        row.className = "hover:bg-slate-50/80 text-slate-700 transition border-b border-slate-100 baris-log-pembantu";
+        row.setAttribute('data-payload', JSON.stringify(metaPayload));
 
         let badgeWarna = "bg-slate-100 text-slate-700 border-slate-200";
         if (jenis === 'Barang Masuk') badgeWarna = "bg-emerald-50 text-emerald-700 border-emerald-200/80";
@@ -330,15 +341,113 @@
             <td class="p-4 text-xs text-slate-600">${detailKarakteristik}</td>
             <td class="p-4 text-right font-mono font-bold text-slate-900">${kuantitasFinal}</td>
             <td class="p-4 text-xs">${logistikKet}</td>
+            <td class="p-4 text-center whitespace-nowrap">
+                <div class="flex items-center justify-center space-x-2">
+                    <button type="button" onclick="editBarisLog(this)" class="bg-amber-50 text-amber-700 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg border border-amber-200 transition text-xs font-semibold flex items-center gap-1 shadow-sm">
+                        ✏️ Edit
+                    </button>
+                    <button type="button" onclick="hapusBarisLog(this)" class="bg-rose-50 text-rose-700 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg border border-rose-200 transition text-xs font-semibold flex items-center gap-1 shadow-sm">
+                        🗑️ Hapus
+                    </button>
+                </div>
+            </td>
         `;
 
         tbody.insertBefore(row, tbody.firstChild);
 
+        // Reset Form Saja
+        resetFormSaja();
+    }
+
+    function resetFormSaja() {
         document.getElementById('formBahanPembantu').reset();
         document.getElementById('itemBarang').disabled = true;
+        document.getElementById('itemBarang').className = "w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-400";
         document.getElementById('wrapperSpesifikasi').classList.add('hidden');
         document.getElementById('tglTransaksi').valueAsDate = new Date();
         aturFormLogistik();
+    }
+
+    function hapusBarisLog(btn) {
+        if (confirm("Apakah Anda yakin mau menghapus data log mutasi pembantu ini?")) {
+            const row = btn.closest('tr');
+            const tbody = document.getElementById('badanTabelLog');
+            row.remove();
+
+            if (tbody.querySelectorAll('.baris-log-pembantu').length === 0) {
+                tbody.innerHTML = `
+                    <tr id="barisKosong">
+                        <td colspan="7" class="p-8 text-center text-slate-400 italic bg-slate-50/30">
+                            Belum ada pemakaian bahan pembantu yang diinput.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    }
+
+    function editBarisLog(btn) {
+        const row = btn.closest('tr');
+        const data = JSON.parse(row.getAttribute('data-payload'));
+
+        // Balikkan dropdown utama
+        document.getElementById('subKategori').value = data.sub;
+        updateItemDropdown();
+
+        document.getElementById('itemBarang').value = data.item;
+        renderSpesifikasiForm();
+
+        document.getElementById('jenisTransaksi').value = data.jenis;
+        document.getElementById('tglTransaksi').value = data.tgl;
+        aturFormLogistik();
+
+        if (data.jenis === 'Barang Keluar') {
+            document.getElementById('namaProyek').value = data.proyek;
+        } else {
+            document.getElementById('asalBarang').value = data.asal;
+        }
+
+        // Balikkan form dinamis berdasarkan item barang yang dicatat
+        if (data.item === 'Lem') {
+            document.getElementById('p_nama').value = data.spek.namaLem;
+            document.getElementById('p_satuan').value = data.spek.sat;
+            document.getElementById('p_qty').value = data.spek.qty;
+        }
+        else if (data.item === 'Sekrup') {
+            document.getElementById('s_merk').value = data.spek.merk;
+            document.getElementById('s_ukuran').value = data.spek.uk;
+            document.getElementById('s_satuan').value = data.spek.sat;
+            document.getElementById('s_qty').value = data.spek.qty;
+        }
+        else if (data.item === 'Cat' || data.item === 'Thinner' || data.item === 'Cairan Kimia H2O2') {
+            document.getElementById('c_merk').value = data.spek.merk;
+            document.getElementById('c_jenis').value = data.spek.jns;
+            document.getElementById('c_qty').value = data.spek.qty;
+        }
+        else if (data.item === 'Amplas') {
+            document.getElementById('a_merk').value = data.spek.merk;
+            document.getElementById('a_grit').value = data.spek.grit;
+            document.getElementById('a_satuan').value = data.spek.sat;
+            document.getElementById('a_qty').value = data.spek.qty;
+            hitungKonversiAmplas();
+        }
+
+        // Singkirkan baris dari tabel agar bisa di-commit ulang lewat tombol simpan utama
+        row.remove();
+
+        const tbody = document.getElementById('badanTabelLog');
+        if (tbody.querySelectorAll('.baris-log-pembantu').length === 0) {
+            tbody.innerHTML = `
+                <tr id="barisKosong">
+                    <td colspan="7" class="p-8 text-center text-slate-400 italic bg-slate-50/30">
+                        Belum ada pemakaian bahan pembantu yang diinput.
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Scroll halus ke form atas
+        document.getElementById('formBahanPembantu').scrollIntoView({ behavior: 'smooth' });
     }
 </script>
 @endsection

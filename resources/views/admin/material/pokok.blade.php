@@ -95,11 +95,12 @@
                             <th class="p-3.5 font-semibold">Karakteristik & Lokasi Gudang</th>
                             <th class="p-3.5 font-semibold text-right">Kuantitas Log</th>
                             <th class="p-3.5 font-semibold">Pelacakan Logistik</th>
+                            <th class="p-3.5 font-semibold text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="badanTabelLog" class="divide-y divide-slate-100">
                         <tr id="barisKosong">
-                            <td colspan="6" class="p-8 text-center text-slate-400 italic bg-slate-50/50">
+                            <td colspan="7" class="p-8 text-center text-slate-400 italic bg-slate-50/50">
                                 Belum ada mutasi material pokok yang tercatat.
                             </td>
                         </tr>
@@ -216,7 +217,8 @@
         const p = parseFloat(document.getElementById('k_panjang').value) || 0;
         const b = parseFloat(document.getElementById('k_qty').value) || 0;
         const totalM3 = (t * l * p / 1000000) * b;
-        document.getElementById('calcPreviewM3').innerText = `Volume Hasil Konversi: ${totalM3.toFixed(4)} M³ (Berdasarkan total ${b} Batang)`;
+        const preview = document.getElementById('calcPreviewM3');
+        if(preview) preview.innerText = `Volume Hasil Konversi: ${totalM3.toFixed(4)} M³ (Berdasarkan total ${b} Batang)`;
         return `${totalM3.toFixed(4)} M³`;
     }
 
@@ -225,7 +227,8 @@
         const p = parseFloat(document.getElementById('v_panjang').value) || 0;
         const lembar = parseFloat(document.getElementById('v_qty').value) || 0;
         const totalM2 = (l * p / 10000) * lembar;
-        document.getElementById('calcPreviewM2').innerText = `Luas Hasil Konversi: ${totalM2.toFixed(2)} m² (Berdasarkan total ${lembar} Lembar)`;
+        const preview = document.getElementById('calcPreviewM2');
+        if(preview) preview.innerText = `Luas Hasil Konversi: ${totalM2.toFixed(2)} m² (Berdasarkan total ${lembar} Lembar)`;
         return `${totalM2.toFixed(2)} m²`;
     }
 
@@ -242,19 +245,26 @@
         let kuantitasFinal = "";
         let pelacakanLogistik = "";
 
+        // Objek untuk menyimpan metadata asli (digunakan saat trigger fitur Edit)
+        let metaData = { sub: sub, item: item, jenis: jenis, tgl: tgl };
+
         if (jenis === 'Barang Keluar') {
             const proyek = document.getElementById('namaProyek').value || "Proyek Tidak Terdata";
             pelacakanLogistik = `<span class="text-rose-600 font-medium">🛑 Keluar ke:</span> ${proyek}`;
+            metaData.tujuan = proyek;
         } else {
             const asal = document.getElementById('asalBarang').value || "Stok Gudang Awal";
             pelacakanLogistik = `<span class="text-emerald-600 font-medium">📦 Masuk dari:</span> ${asal}`;
+            metaData.asal = asal;
         }
 
         if (sub === 'kayu_solid') {
             const grade = document.getElementById('k_grade').value;
             const gdg = document.getElementById('k_gudang').value || "Gudang Utama";
+            const qty = document.getElementById('k_qty').value;
             kuantitasFinal = hitungKubikasi();
-            spekTeknis = `Grade: ${grade} | Lokasi: ${gdg} (${document.getElementById('k_qty').value} Pcs)`;
+            spekTeknis = `Grade: ${grade} | Lokasi: ${gdg} (${qty} Pcs)`;
+            metaData.spek = { tebal: document.getElementById('k_tebal').value, lebar: document.getElementById('k_lebar').value, panjang: document.getElementById('k_panjang').value, grade: grade, gudang: gdg, qty: qty };
         } 
         else if (sub === 'olahan_kayu') {
             const merk = document.getElementById('b_merk').value || "Generic";
@@ -262,6 +272,7 @@
             const qty = document.getElementById('b_qty').value;
             kuantitasFinal = `${qty} Lbr`;
             spekTeknis = `${merk} (${tebal}mm)`;
+            metaData.spek = { merk: merk, tebal: tebal, qty: qty };
         }
         else if (item.includes('HPL')) {
             const merk = document.getElementById('h_merk').value;
@@ -269,19 +280,29 @@
             const qty = document.getElementById('h_qty').value;
             kuantitasFinal = `${qty} Lbr`;
             spekTeknis = `Merk: ${merk} | Kode: ${kode}`;
+            metaData.spek = { merk: merk, kode: kode, qty: qty };
         }
         else if (item.includes('Veneer')) {
             const bndl = document.getElementById('v_bendel').value;
             if (!bndl) { alert("Data Nomor Bendel Veneer Wajib Diisi!"); return; }
+            const jenisV = document.getElementById('v_jenis').value;
+            const tebal = document.getElementById('v_tebal').value;
+            const lebar = document.getElementById('v_lebar').value;
+            const panjang = document.getElementById('v_panjang').value;
+            const qty = document.getElementById('v_qty').value;
             kuantitasFinal = hitungLuasVeneer();
-            spekTeknis = `No. Bendel: ${bndl} | ${document.getElementById('v_jenis').value} (${document.getElementById('v_qty').value} Lbr)`;
+            spekTeknis = `No. Bendel: ${bndl} | ${jenisV} (${qty} Lbr)`;
+            metaData.spek = { bndl: bndl, jenisV: jenisV, tebal: tebal, lebar: lebar, panjang: panjang, qty: qty };
         }
 
         if (emptyRow) emptyRow.remove();
 
         const tbody = document.getElementById('badanTabelLog');
         const row = document.createElement('tr');
-        row.className = "hover:bg-slate-50 text-slate-700 border-b border-slate-100 transition-colors text-sm";
+        row.className = "hover:bg-slate-50 text-slate-700 border-b border-slate-100 transition-colors text-sm baris-log-data";
+        
+        // Simpan json string data asli ke elemen tr agar gampang dibaca saat fungsi edit dijalankan
+        row.setAttribute('data-payload', JSON.stringify(metaData));
 
         let labelWarna = "bg-slate-100 text-slate-700";
         if (jenis === 'Barang Masuk') labelWarna = "bg-emerald-50 text-emerald-600 font-semibold";
@@ -294,16 +315,122 @@
             <td class="p-3.5 text-xs text-slate-500">${spekTeknis}</td>
             <td class="p-3.5 text-right font-mono font-bold text-slate-800 whitespace-nowrap">${kuantitasFinal}</td>
             <td class="p-3.5 text-xs text-slate-500">${pelacakanLogistik}</td>
+            <td class="p-3.5 text-center whitespace-nowrap">
+                <div class="flex items-center justify-center space-x-1.5">
+                    <button type="button" onclick="editBarisLog(this)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded transition-colors text-xs font-medium flex items-center gap-0.5 shadow-sm">
+                        ✏️ <span>Edit</span>
+                    </button>
+                    <button type="button" onclick="hapusBarisLog(this)" class="bg-rose-50 text-rose-600 hover:bg-rose-100 p-1.5 rounded transition-colors text-xs font-medium flex items-center gap-0.5 shadow-sm">
+                        🗑️ <span>Hapus</span>
+                    </button>
+                </div>
+            </td>
         `;
 
         tbody.insertBefore(row, tbody.firstChild);
 
         // Reset Form Setelah Disimpan
+        resetFormSaja();
+    }
+
+    function resetFormSaja() {
         document.getElementById('formBahanPokok').reset();
         document.getElementById('itemBarang').disabled = true;
+        document.getElementById('itemBarang').className = "w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm text-slate-400 shadow-sm cursor-not-allowed";
         document.getElementById('wrapperSpesifikasi').classList.add('hidden');
         document.getElementById('tglTransaksi').valueAsDate = new Date();
         aturFormLogistik();
+    }
+
+    function hapusBarisLog(btn) {
+        if (confirm("Apakah Anda yakin ingin menghapus data riwayat transaksi ini?")) {
+            const row = btn.closest('tr');
+            const tbody = document.getElementById('badanTabelLog');
+            row.remove();
+
+            // Cek jika tabel kosong kembali, munculkan lagi baris default pesan kosong
+            if (tbody.querySelectorAll('.baris-log-data').length === 0) {
+                tbody.innerHTML = `
+                    <tr id="barisKosong">
+                        <td colspan="7" class="p-8 text-center text-slate-400 italic bg-slate-50/50">
+                            Belum ada mutasi material pokok yang tercatat.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    }
+
+    function editBarisLog(btn) {
+        const row = btn.closest('tr');
+        const data = JSON.parse(row.getAttribute('data-payload'));
+
+        // Kembalikan nilai drop-down sub kategori dan pemicu update item
+        document.getElementById('subKategori').value = data.sub;
+        updateItemDropdown();
+
+        // Kembalikan nilai item barang dan buat form spesifikasinya render kembali
+        document.getElementById('itemBarang').value = data.item;
+        renderSpesifikasiForm();
+
+        // Kembalikan form logistik & tanggal
+        document.getElementById('jenisTransaksi').value = data.jenis;
+        document.getElementById('tglTransaksi').value = data.tgl;
+        aturFormLogistik();
+
+        if (data.jenis === 'Barang Keluar') {
+            document.getElementById('namaProyek').value = data.tujuan;
+        } else {
+            document.getElementById('asalBarang').value = data.asal;
+        }
+
+        // Kembalikan input spesifikasi dinamis sesuai tipenya masing-masing
+        if (data.sub === 'kayu_solid') {
+            document.getElementById('k_tebal').value = data.spek.tebal;
+            document.getElementById('k_lebar').value = data.spek.lebar;
+            document.getElementById('k_panjang').value = data.spek.panjang;
+            document.getElementById('k_grade').value = data.spek.grade;
+            document.getElementById('k_gudang').value = data.spek.gudang;
+            document.getElementById('k_qty').value = data.spek.qty;
+            hitungKubikasi();
+        } 
+        else if (data.sub === 'olahan_kayu') {
+            document.getElementById('b_merk').value = data.spek.merk;
+            document.getElementById('b_tebal').value = data.spek.tebal;
+            document.getElementById('b_qty').value = data.spek.qty;
+        }
+        else if (data.item.includes('HPL')) {
+            document.getElementById('h_merk').value = data.spek.merk;
+            document.getElementById('h_kode').value = data.spek.kode;
+            document.getElementById('h_qty').value = data.spek.qty;
+        }
+        else if (data.item.includes('Veneer')) {
+            document.getElementById('v_bendel').value = data.spek.bndl;
+            document.getElementById('v_jenis').value = data.spek.jenisV;
+            document.getElementById('v_tebal').value = data.spek.tebal;
+            document.getElementById('v_lebar').value = data.spek.lebar;
+            document.getElementById('v_panjang').value = data.spek.panjang;
+            document.getElementById('v_qty').value = data.spek.qty;
+            hitungLuasVeneer();
+        }
+
+        // Hapus baris lama dari tabel, karena user akan menyimpan versi barunya kembali
+        row.remove();
+        
+        // Cek jika kosong pasca diangkat datanya ke form atas
+        const tbody = document.getElementById('badanTabelLog');
+        if (tbody.querySelectorAll('.baris-log-data').length === 0) {
+            tbody.innerHTML = `
+                <tr id="barisKosong">
+                    <td colspan="7" class="p-8 text-center text-slate-400 italic bg-slate-50/50">
+                        Belum ada mutasi material pokok yang tercatat.
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Scroll halus otomatis ke form agar user tahu data sudah dimuat ke form atas
+        document.getElementById('formBahanPokok').scrollIntoView({ behavior: 'smooth' });
     }
 </script>
 @endsection
