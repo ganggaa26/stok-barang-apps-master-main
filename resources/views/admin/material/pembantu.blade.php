@@ -24,7 +24,7 @@
     </div>
 
     @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl p-4">
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl p-4 shadow-sm">
             {{ session('success') }}
         </div>
     @endif
@@ -48,7 +48,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Sub-Kategori Bahan Pembantu</label>
-                    <select id="subKategori" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition" onchange="updateItemDropdown()">
+                    <select id="subKategori" name="kategori_id" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition" onchange="updateItemDropdown()" required>
                         <option value="">-- Pilih Sub-Kategori --</option>
                         @foreach($categories as $cat)
                             <option value="{{ $cat->id }}">{{ $cat->nama_Kategori }}</option>
@@ -58,7 +58,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Item Barang</label>
-                    <select name="item_material" id="itemBarang" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-400 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition" onchange="renderSpesifikasiForm()" disabled>
+                    <select name="material_pembantu_id" id="itemBarang" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-400 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition" onchange="renderSpesifikasiForm()" disabled required>
                         <option value="">-- Pilih Item --</option>
                     </select>
                 </div>
@@ -68,7 +68,7 @@
                 <div class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/60 pb-2">
                     📋 Atribut Teknis Material
                 </div>
-                <div id="areaFormDinamis" class="text-sm"></div>
+                <div id="areaFormDinamis"></div>
             </div>
 
             <div class="border-t border-slate-100 pt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -83,12 +83,12 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Tanggal</label>
-                    <input type="date" name="tanggal" id="tglTransaksi" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition">
+                    <input type="date" name="tanggal" id="tglTransaksi" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition" required>
                 </div>
 
                 <div id="boxAsal">
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Asal / Supplier</label>
-                    <input type="text" id="asalBarang" placeholder="Contoh: Toko Kimia / Sisa Project" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition">
+                    <input type="text" name="asal_atau_proyek" id="asalBarang" placeholder="Contoh: Toko Kimia / Sisa Project" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition">
                 </div>
 
                 <div id="boxProyek" class="hidden">
@@ -110,7 +110,7 @@
             <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                 📊 Log Mutasi Transaksi
             </h2>
-            <span class="text-xs text-slate-400 font-mono">Real-time update</span>
+            <span class="text-xs text-slate-400 font-mono">Real-time database records</span>
         </div>
 
         <div class="overflow-x-auto">
@@ -123,37 +123,51 @@
                         <th class="p-4 font-medium">Spesifikasi Detail</th>
                         <th class="p-4 font-medium text-right">Kuantitas</th>
                         <th class="p-4 font-medium">Alokasi / Informasi</th>
+                        <th class="p-4 font-medium text-center">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
-                    @forelse($mutasiks as $log)
-                        <tr class="hover:bg-slate-50/80 text-slate-700 transition border-b border-slate-100">
-                            <td class="p-4 text-xs text-slate-500 font-mono">{{ \Carbon\Carbon::parse($log->tanggal)->format('d-m-Y') }}</td>
-                            <td class="p-4 font-semibold text-slate-900">{{ $log->materialPembantu->nama_material ?? '-' }}</td>
+                <tbody id="badanTabelLog" class="divide-y divide-slate-100 bg-white">
+                    @forelse($mutasis as $mutasi)
+                        @php
+                            $badgeWarna = "bg-slate-100 text-slate-700 border-slate-200";
+                            if ($mutasi->jenis_transaksi === 'Barang Masuk') $badgeWarna = "bg-emerald-50 text-emerald-700 border-emerald-200/80";
+                            if ($mutasi->jenis_transaksi === 'Barang Keluar') $badgeWarna = "bg-rose-50 text-rose-700 border-rose-200/80";
+                            if ($mutasi->jenis_transaksi === 'Stok Awal') $badgeWarna = "bg-blue-50 text-blue-700 border-blue-200/80";
+                        @endphp
+                        <tr class="hover:bg-slate-50/80 text-slate-700 transition border-b border-slate-100 baris-log-pembantu">
+                            <td class="p-4 text-xs text-slate-500 font-mono">{{ $mutasi->tanggal }}</td>
+                            <td class="p-4 font-semibold text-slate-900">{{ $mutasi->materialPembantu->nama_material ?? '-' }}</td>
                             <td class="p-4 text-center">
-                                @php
-                                    $badgeWarna = match($log->jenis_transaksi) {
-                                        'Barang Masuk' => 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
-                                        'Barang Keluar' => 'bg-rose-50 text-rose-700 border-rose-200/80',
-                                        'Stok Awal' => 'bg-blue-50 text-blue-700 border-blue-200/80',
-                                        default => 'bg-slate-100 text-slate-700 border-slate-200',
-                                    };
-                                @endphp
-                                <span class="px-2.5 py-1 text-[11px] font-bold rounded-lg border {{ $badgeWarna }}">{{ $log->jenis_transaksi }}</span>
+                                <span class="px-2.5 py-1 text-[11px] font-bold rounded-lg border {{ $badgeWarna }}">{{ $mutasi->jenis_transaksi }}</span>
                             </td>
-                            <td class="p-4 text-xs text-slate-600">{{ $log->keterangan }}</td>
-                            <td class="p-4 text-right font-mono font-bold text-slate-900">{{ $log->kuantitas }} {{ $log->materialPembantu->satuan ?? '' }}</td>
+                            <td class="p-4 text-xs text-slate-600">
+                                Merek: {{ $mutasi->merk }} | Spek: {{ $mutasi->spesifikasi }}
+                            </td>
+                            <td class="p-4 text-right font-mono font-bold text-slate-900">
+                                {{ $mutasi->kuantitas }} {{ $mutasi->satuan_input }}
+                            </td>
                             <td class="p-4 text-xs">
-                                @if($log->jenis_transaksi === 'Barang Keluar')
-                                    <span class="flex items-center gap-1 text-rose-600 font-medium">🔴 Keluar Ke: <b class="text-slate-800">{{ $log->asal_atau_proyek }}</b></span>
+                                @if($mutasi->jenis_transaksi === 'Barang Keluar')
+                                    <span class="flex items-center gap-1 text-rose-600 font-medium">🔴 Keluar Ke: <b class="text-slate-800">{{ $mutasi->asal_atau_proyek }}</b></span>
                                 @else
-                                    <span class="flex items-center gap-1 text-emerald-600 font-medium">🟢 Masuk Dari: <b class="text-slate-800">{{ $log->asal_atau_proyek }}</b></span>
+                                    <span class="flex items-center gap-1 text-emerald-600 font-medium">🟢 Masuk Dari: <b class="text-slate-800">{{ $mutasi->asal_atau_proyek }}</b></span>
                                 @endif
+                            </td>
+                            <td class="p-4 text-center">
+                                <div class="flex items-center justify-center gap-2">
+                                    <form action="{{ route('material.pembantu.destroy', $mutasi->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin mau menghapus log data ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-2 py-1 rounded-md border border-rose-100 hover:bg-rose-100 transition">
+                                            Hapus
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="6" class="p-8 text-center text-slate-400 italic bg-slate-50/30">
+                        <tr id="barisKosong">
+                            <td colspan="7" class="p-8 text-center text-slate-400 italic bg-slate-50/30">
                                 Belum ada pemakaian bahan pembantu yang diinput.
                             </td>
                         </tr>
@@ -168,7 +182,6 @@
 <script>
     document.getElementById('tglTransaksi').valueAsDate = new Date();
 
-    // Data dari database: { kategori_id: [ { id, nama }, ... ] }
     const dataBahanPembantu = @json($categories->mapWithKeys(function ($cat) {
         return [$cat->id => $cat->materialPembantus->map(function ($item) {
             return ['id' => $item->id, 'nama' => $item->nama_material];
@@ -202,26 +215,26 @@
         const jenis = document.getElementById('jenisTransaksi').value;
         const boxAsal = document.getElementById('boxAsal');
         const boxProyek = document.getElementById('boxProyek');
+        const asalInput = document.getElementById('asalBarang');
 
         if (jenis === 'Barang Keluar') {
             boxAsal.classList.add('hidden');
             boxProyek.classList.remove('hidden');
+            asalInput.removeAttribute('name');
+            document.getElementById('namaProyek').setAttribute('name', 'asal_atau_proyek');
         } else {
             boxAsal.classList.remove('hidden');
             boxProyek.classList.add('hidden');
+            asalInput.setAttribute('name', 'asal_atau_proyek');
+            document.getElementById('namaProyek').removeAttribute('name');
         }
     }
 
-    /**
-     * Deteksi jenis kalkulasi berdasarkan nama_material dari database.
-     * Pola ini meneruskan ide "sub.includes('amplas')" dari versi sebelumnya,
-     * tapi diperluas untuk semua jenis item bahan pembantu.
-     */
     function deteksiJenisItem(namaMaterial) {
         const nama = namaMaterial.toLowerCase();
         if (nama.includes('lem')) return 'lem';
         if (nama.includes('sekrup')) return 'sekrup';
-        if (nama.includes('cat') || nama.includes('thinner') || nama.includes('h2o2')) return 'cairan';
+        if (nama.includes('cat') || nama.includes('thinner') || nama.includes('h2o2') || nama.includes('cairan')) return 'cairan';
         if (nama.includes('amplas')) return 'amplas';
         return null;
     }
@@ -282,7 +295,7 @@
                 <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Merek & Jenis</label><input type="text" id="a_merk" placeholder="Contoh: Taiyo / Ekamant" class="${inputClass}" required></div>
                 <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Grit Kekasaran</label>
                     <select id="a_grit" class="${inputClass}">
-                        <option>60</option><option>80</option><option>100</option><option>120</option>
+                        <option>60</option><option>80</option><option>100</option><option>120</option><option>240</option><option>400</option>
                     </select>
                 </div>
                 <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Satuan Input Utama</label>
@@ -298,15 +311,11 @@
             hitungKonversiAmplas();
         }
         else {
-            // Item tanpa kalkulasi khusus: hanya kuantitas biasa
-            areaForm.className = "grid grid-cols-1 md:grid-cols-2 gap-4 text-sm";
+            areaForm.className = "grid grid-cols-1 md:grid-cols-3 gap-4 text-sm";
             areaForm.innerHTML = `
-                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Satuan</label>
-                    <input type="text" id="x_satuan" placeholder="Contoh: Pcs, Liter, Kg" class="${inputClass}">
-                </div>
-                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Quantity</label>
-                    <input type="number" id="x_qty" value="1" min="0" step="0.01" class="${inputClass}" required>
-                </div>
+                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Merek / Deskripsi</label><input type="text" id="x_merk" placeholder="General" class="${inputClass}"></div>
+                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Satuan</label><input type="text" id="x_satuan" placeholder="Pcs, Pack, dll" class="${inputClass}"></div>
+                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Quantity</label><input type="number" id="x_qty" value="1" min="0" step="0.01" class="${inputClass}" required></div>
             `;
         }
     }
@@ -319,72 +328,68 @@
         if (sat === 'Roll') {
             const totalMeter = val * 50;
             preview.innerText = `Matriks Gudang: Input ${val} Roll = Otomatis kalkulasi ${totalMeter} Meter Stok Induk.`;
+            return totalMeter;
         } else {
             preview.innerText = `Matriks Gudang: Dicatat flat sesuai nominal unit: ${val} ${sat}.`;
+            return val;
         }
     }
 
-    /**
-     * Dipanggil saat tombol submit ditekan.
-     * Mengisi hidden input (merk, spesifikasi, satuan_input, kuantitas)
-     * berdasarkan jenis item yang aktif, sebelum form benar-benar dikirim
-     * ke server via route Laravel (material.pembantu.store).
-     */
     function siapkanSubmit() {
         const itemSelect = document.getElementById('itemBarang');
-        if (!itemSelect.value) {
-            alert('Silakan tentukan item material pembantu!');
-            return false;
-        }
+        if (!itemSelect.value) { alert('Silakan tentukan item material pembantu!'); return false; }
 
         const namaMaterial = itemSelect.options[itemSelect.selectedIndex].getAttribute('data-nama');
         const jenis = deteksiJenisItem(namaMaterial);
 
-        let merk = "", spesifikasi = "", satuanInput = "", kuantitas = "";
+        let merk = "";
+        let spesifikasi = "";
+        let satuan = "";
+        let kuantitas = 0;
 
         if (jenis === 'lem') {
             merk = document.getElementById('p_nama').value;
-            satuanInput = document.getElementById('p_satuan').value;
+            spesifikasi = "Bahan Perekat Produksi";
+            satuan = document.getElementById('p_satuan').value;
             kuantitas = document.getElementById('p_qty').value;
-        }
+        } 
         else if (jenis === 'sekrup') {
             merk = document.getElementById('s_merk').value;
-            spesifikasi = document.getElementById('s_ukuran').value;
-            satuanInput = document.getElementById('s_satuan').value;
+            spesifikasi = "Ukuran: " + document.getElementById('s_ukuran').value;
+            satuan = document.getElementById('s_satuan').value;
             kuantitas = document.getElementById('s_qty').value;
         }
         else if (jenis === 'cairan') {
             merk = document.getElementById('c_merk').value;
-            spesifikasi = document.getElementById('c_jenis').value;
-            satuanInput = "Liter";
+            spesifikasi = "Jenis Kimia: " + document.getElementById('c_jenis').value;
+            satuan = "Liter";
             kuantitas = document.getElementById('c_qty').value;
         }
         else if (jenis === 'amplas') {
             merk = document.getElementById('a_merk').value;
-            spesifikasi = `Grit ${document.getElementById('a_grit').value}`;
-            satuanInput = document.getElementById('a_satuan').value;
-
-            const qtyInput = parseFloat(document.getElementById('a_qty').value) || 0;
-            // Konversi: Roll selalu disimpan sebagai meter di kolom kuantitas,
-            // satuan_input tetap menyimpan pilihan asli user ("Roll").
-            kuantitas = satuanInput === 'Roll' ? (qtyInput * 50) : qtyInput;
+            spesifikasi = "Grit: " + document.getElementById('a_grit').value;
+            satuan = document.getElementById('a_satuan').value;
+            
+            if (satuan === 'Roll') {
+                kuantitas = parseFloat(document.getElementById('a_qty').value) * 50; 
+                satuan = "Meter"; 
+            } else {
+                kuantitas = document.getElementById('a_qty').value;
+            }
         }
         else {
-            satuanInput = document.getElementById('x_satuan')?.value || "";
-            kuantitas = document.getElementById('x_qty')?.value || "";
-        }
-
-        if (!kuantitas || parseFloat(kuantitas) <= 0) {
-            alert('Kuantitas harus diisi dan lebih dari 0!');
-            return false;
+            merk = document.getElementById('x_merk').value || "General Merek";
+            spesifikasi = "Bahan Pembantu Umum";
+            satuan = document.getElementById('x_satuan').value || "Pcs";
+            kuantitas = document.getElementById('x_qty').value;
         }
 
         document.getElementById('inputMerk').value = merk;
         document.getElementById('inputSpesifikasi').value = spesifikasi;
-        document.getElementById('inputSatuanInput').value = satuanInput;
+        document.getElementById('inputSatuanInput').value = satuan;
         document.getElementById('inputKuantitas').value = kuantitas;
 
-        return true; // lanjutkan submit form ke server
+        return true;
     }
 </script>
 @endsection

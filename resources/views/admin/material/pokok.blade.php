@@ -111,11 +111,12 @@
                             <th class="p-3.5 font-semibold">Spesifikasi & Karakteristik</th>
                             <th class="p-3.5 font-semibold text-right">Kuantitas Log</th>
                             <th class="p-3.5 font-semibold">Pelacakan Logistik</th>
+                            <th class="p-3.5 font-semibold text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="badanTabelLog" class="divide-y divide-slate-100">
                         @forelse($mutasiks as $log)
-                        <tr class="hover:bg-slate-50 text-slate-700 border-b border-slate-100 transition-colors text-sm">
+                        <tr class="hover:bg-slate-50 text-slate-700 border-b border-slate-100 transition-colors text-sm baris-log-data">
                             <td class="p-3.5 text-xs text-slate-400 whitespace-nowrap">{{ \Carbon\Carbon::parse($log->tanggal)->format('d-m-Y') }}</td>
                             <td class="p-3.5 font-medium text-slate-800">{{ $log->material->nama_material ?? 'N/A' }}</td>
                             <td class="p-3.5 text-center whitespace-nowrap">
@@ -126,10 +127,25 @@
                             <td class="p-3.5 text-xs text-slate-500">{{ $log->spesifikasi }}</td>
                             <td class="p-3.5 text-right font-mono font-bold text-slate-800 whitespace-nowrap">{{ $log->kuantitas }} {{ $log->satuan_input }}</td>
                             <td class="p-3.5 text-xs text-slate-500">{{ $log->asal_atau_proyek }}</td>
+                            <td class="p-3.5 text-center whitespace-nowrap">
+                                <div class="flex items-center justify-center space-x-1.5">
+                                    {{-- Aksi Edit & Hapus Database / State --}}
+                                    <button type="button" onclick="editBarisLog(this)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded transition-colors text-xs font-medium flex items-center gap-0.5 shadow-sm">
+                                        ✏️ <span>Edit</span>
+                                    </button>
+                                    <form action="{{ route('material.pokok.destroy', $log->id) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="bg-rose-50 text-rose-600 hover:bg-rose-100 p-1.5 rounded transition-colors text-xs font-medium flex items-center gap-0.5 shadow-sm">
+                                            🗑️ <span>Hapus</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                         @empty
                         <tr id="barisKosong">
-                            <td colspan="6" class="p-8 text-center text-slate-400 italic bg-slate-50/50">
+                            <td colspan="7" class="p-8 text-center text-slate-400 italic bg-slate-50/50">
                                 Belum ada mutasi material pokok yang tercatat di database.
                             </td>
                         </tr>
@@ -239,10 +255,6 @@
             hitungLuasVeneer();
         }
         else {
-            // Belum ada tipe_kalkulasi yang dikenali untuk item ini.
-            // Ini menandakan: item baru ditambah tapi belum diisi kolom tipe_kalkulasi
-            // di database, ATAU tipe_kalkulasi-nya benar-benar baru dan belum
-            // ada blok form-nya di kode JS ini.
             areaForm.innerHTML = `
                 <div class="md:col-span-3 bg-amber-50 text-amber-700 p-3 rounded-lg border border-amber-200 text-xs">
                     ⚠️ Item ini belum punya "tipe_kalkulasi" yang dikenali sistem.
@@ -258,7 +270,8 @@
         const p = parseFloat(document.getElementById('k_panjang').value) || 0;
         const b = parseFloat(document.getElementById('k_qty').value) || 0;
         const totalM3 = (t * l * p / 1000000) * b;
-        document.getElementById('calcPreviewM3').innerText = `Volume Hasil Konversi: ${totalM3.toFixed(4)} M³ (Berdasarkan total ${b} Batang)`;
+        const preview = document.getElementById('calcPreviewM3');
+        if(preview) preview.innerText = `Volume Hasil Konversi: ${totalM3.toFixed(4)} M³ (Berdasarkan total ${b} Batang)`;
         return totalM3;
     }
 
@@ -267,15 +280,11 @@
         const p = parseFloat(document.getElementById('v_panjang').value) || 0;
         const lembar = parseFloat(document.getElementById('v_qty').value) || 0;
         const totalM2 = (l * p / 10000) * lembar;
-        document.getElementById('calcPreviewM2').innerText = `Luas Hasil Konversi: ${totalM2.toFixed(2)} m² (Berdasarkan total ${lembar} Lembar)`;
+        const preview = document.getElementById('calcPreviewM2');
+        if(preview) preview.innerText = `Luas Hasil Konversi: ${totalM2.toFixed(2)} m² (Berdasarkan total ${lembar} Lembar)`;
         return totalM2;
     }
 
-    /**
-     * Dipanggil saat tombol "Amankan Data Stok Pokok" ditekan.
-     * Mengisi hidden input (spesifikasi, satuan_input, kuantitas)
-     * berdasarkan sub-kategori/item aktif, sebelum form dikirim ke server.
-     */
     function siapkanSubmitPokok() {
         const itemSelect = document.getElementById('itemBarang');
         if (!itemSelect.value) {
@@ -318,7 +327,7 @@
             spesifikasi = `Jenis: ${jenis} | No. Bendel: ${bendel} | Tebal: ${tebal}mm | Jumlah: ${jumlahLembar} Lembar`;
         }
         else {
-            alert('Item ini belum punya tipe_kalkulasi yang dikenali sistem. Hubungi admin untuk melengkapi data master.');
+            alert('Item ini belum punya tipe_kalkulasi yang dikenali sistem.');
             return false;
         }
 
@@ -339,5 +348,10 @@
 
         return true;
     }
+
+    function editBarisLog(btn) {
+        alert('Fitur edit dialihkan ke pengeditan data master via database.');
+        // Jika ingin mengembalikan data ke form input atas untuk re-submit, 
+        // logika parsing string spesifikasi ke masing-masing input field bisa ditaruh di sini.
+    }
 </script>
-@endsection
