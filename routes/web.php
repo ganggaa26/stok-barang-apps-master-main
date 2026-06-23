@@ -1,61 +1,64 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\BarangController;
+use Illuminate\Support\Facades\DB; // Ditambahkan agar DB::table() di dashboard tidak error
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\MaterialPembantuController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\CategoryController;
+
 Route::get('/', function () {
     return view('welcome');
 });
 
+// Dashboard: Menampilkan notifikasi stok yang menipis
 Route::get('/dashboard', function () {
-   $materialMenipis = DB::table('materials')
+    $materialMenipis = DB::table('materials')
         ->whereRaw('stok_sekarang <= stok_minimum')
         ->get();
-        return view('dashboard', compact('materialMenipis'));
+    return view('dashboard', compact('materialMenipis'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// Semua Route yang membutuhkan Login (Autentikasi)
 Route::middleware('auth')->group(function () {
+    
+    // --- PROFILE USER ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/material', [BarangController::class, 'index'])->name('material.index');
-
-    Route::get('/material/pokok', [BarangController::class, 'pokok'])->name('material.pokok');
-    Route::get('/material/pokok/create', [BarangController::class, 'create'])->name('material.pokok.create');
-    Route::post('/material/pokok/store', [BarangController::class, 'store'])->name('material.pokok.store');
+    // --- MATERIAL POKOK (Menggunakan MaterialController) ---
+    Route::get('/material/pokok', [MaterialController::class, 'index'])->name('material.pokok');
+    Route::post('/material/pokok/store', [MaterialController::class, 'storeMutasi'])->name('material.pokok.store');
     
+    // --- MATERIAL PEMBANTU (Menggunakan MaterialPembantuController) ---
+    Route::get('/material/pembantu', [MaterialPembantuController::class, 'index'])->name('material.pembantu');
+    Route::post('/material/pembantu/store', [MaterialPembantuController::class, 'store'])->name('material.pembantu.store');
 
+    // --- MUTASI / TRANSAKSI STOK ---
+    Route::post('/material/mutasi', [MaterialController::class, 'storeMutasi'])->name('material.storeMutasi');
+
+    // --- SUPPLIER ---
     Route::get('/material/supplier', [SupplierController::class, 'index'])->name('material.supplier');
 
+    // --- MASTER DATA KATEGORI (Fitur Edit & Update Telah Dihapus Sesuai Permintaan Industri) ---
     Route::get('/material/category', [CategoryController::class, 'index'])->name('material.category');
     Route::get('/material/category/create', [CategoryController::class, 'create'])->name('material.category.create');
     Route::post('/material/category/store', [CategoryController::class, 'store'])->name('material.category.store');
-    Route::get('/material/category/edit/{id}', [CategoryController::class, 'edit'])->name('material.category.edit');
-    Route::put('/material/category/update/{id}', [CategoryController::class, 'update'])->name('material.category.update');
 
-     Route::get('/material/pembantu', function () {
-            if (Auth::user()->role === 'staff'){
-                return view('staff.pembantu_staff');
-            }
-        return view('admin.material.Pembantu');
-    })->name('material.pembantu');
-
-    Route::get('/laporan/stok', function (){
+    // --- LAPORAN LOGISTIK ---
+    Route::get('/laporan/stok', function () {
         return view('laporan.stok');
     })->name('laporan.stok');
 
-      Route::get('/laporan/barang-masuk', function (){
+    Route::get('/laporan/barang-masuk', function () {
         return view('laporan.Barang-masuk');
     })->name('laporan.masuk');
 
-      Route::get('/laporan/barang-keluar', function (){
+    Route::get('/laporan/barang-keluar', function () {
         return view('laporan.Barang-keluar');
     })->name('laporan.keluar');
-
 });
-
 
 require __DIR__.'/auth.php';

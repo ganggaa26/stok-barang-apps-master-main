@@ -45,7 +45,7 @@
                     <i class="nav-icon icon-xs me-2">📦</i> Supplier
                 </a>
             </li>
-            <li class="nav-item">
+            <!-- <li class="nav-item">
 
                 <div class="navbar-heading">Aktivitas Gudang</div>
             </li>
@@ -60,7 +60,7 @@
                 <a class="nav-link" href="#">
                     <i class="nav-icon icon-xs me-2">📤</i> Barang Keluar
                 </a>
-            </li>
+            </li> -->
 
             <li class="nav-item">
                 <div class="navbar-heading">Pelaporan</div>

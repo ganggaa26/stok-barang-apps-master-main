@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categories', function (Blueprint $table) {
-            $table->id();
-            $table->string('nama_kategori');
-            $table->string('tipe_material');
-            $table->timestamps();
-        });
+       Schema::create('categories', function (Blueprint $table) {
+    $table->id();
+    $table->string('nama_Kategori');   
+    $table->string('kelompok_material'); 
+    $table->string('satuan_dasar');   
+    $table->timestamps();
+});
     }
 
     /**

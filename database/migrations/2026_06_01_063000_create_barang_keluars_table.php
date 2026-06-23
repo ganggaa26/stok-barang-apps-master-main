@@ -13,13 +13,6 @@ return new class extends Migration
     {
         Schema::create('barang_keluars', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('material_id')->constrained('materials')->onDelete('cascade');
-            $table->string('nama_proyek');
-            $table->integer('jumlah_keluar'); // Jumlah batang/pcs yang keluar
-            $table->decimal('total_kubikasi', 10, 4); // Hasil rumus: (Tebal/100) x Panjang x Jumlah
-            $table->date('tanggal_keluar');
-            $table->integer('quantity'); 
-
             $table->timestamps();
         });
     }

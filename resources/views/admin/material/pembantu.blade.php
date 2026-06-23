@@ -4,7 +4,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 
 <div class="max-w-7xl mx-auto space-y-6 p-4 md:p-6 font-sans antialiased text-slate-800">
-    
+
     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div class="flex items-center space-x-4">
             <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl border border-blue-100 shadow-sm">
@@ -23,28 +23,42 @@
         </div>
     </div>
 
+    @if(session('success'))
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl p-4">
+            {{ session('success') }}
+        </div>
+    @endif
+
     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div class="border-b border-slate-100 px-5 py-4 bg-slate-50/50">
             <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                 📥 Form Input Mutasi
             </h2>
         </div>
-        
-        <form id="formBahanPembantu" class="p-6 space-y-6">
+
+        <form action="{{ route('material.pembantu.store') }}" method="POST" id="formBahanPembantu" class="p-6 space-y-6">
+            @csrf
+
+            {{-- Hidden inputs: diisi otomatis oleh JS hasil kalkulasi sebelum submit --}}
+            <input type="hidden" name="merk" id="inputMerk">
+            <input type="hidden" name="spesifikasi" id="inputSpesifikasi">
+            <input type="hidden" name="satuan_input" id="inputSatuanInput">
+            <input type="hidden" name="kuantitas" id="inputKuantitas">
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Sub-Kategori Bahan Pembantu</label>
                     <select id="subKategori" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition" onchange="updateItemDropdown()">
                         <option value="">-- Pilih Sub-Kategori --</option>
-                        <option value="perekat_pengikat">Perekat & Pengikat (Adhesives & Fasteners)</option>
-                        <option value="cairan_finishing">Cairan Finishing (Chemicals & Coatings)</option>
-                        <option value="pendukung_finishing">Bahan Pendukung Finishing (Consumables)</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->nama_Kategori }}</option>
+                        @endforeach
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Item Barang</label>
-                    <select id="itemBarang" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-400 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition" onchange="renderSpesifikasiForm()" disabled>
+                    <select name="item_material" id="itemBarang" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-400 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition" onchange="renderSpesifikasiForm()" disabled>
                         <option value="">-- Pilih Item --</option>
                     </select>
                 </div>
@@ -60,7 +74,7 @@
             <div class="border-t border-slate-100 pt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Jenis Transaksi</label>
-                    <select id="jenisTransaksi" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition" onchange="aturFormLogistik()">
+                    <select name="jenis_transaksi" id="jenisTransaksi" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition" onchange="aturFormLogistik()">
                         <option value="Stok Awal">Stok Awal Gudang</option>
                         <option value="Barang Masuk">Barang Masuk (+)</option>
                         <option value="Barang Keluar">Barang Keluar (-)</option>
@@ -69,7 +83,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Tanggal</label>
-                    <input type="date" id="tglTransaksi" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition">
+                    <input type="date" name="tanggal" id="tglTransaksi" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition">
                 </div>
 
                 <div id="boxAsal">
@@ -84,7 +98,7 @@
             </div>
 
             <div class="flex justify-end pt-2">
-                <button type="button" onclick="simpanKeLogSistem()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-3 px-6 rounded-xl shadow-sm hover:shadow transition flex items-center justify-center gap-2">
+                <button type="submit" onclick="return siapkanSubmit()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-3 px-6 rounded-xl shadow-sm hover:shadow transition flex items-center justify-center gap-2">
                     <span>💾</span> Update Stok Bahan
                 </button>
             </div>
@@ -98,7 +112,7 @@
             </h2>
             <span class="text-xs text-slate-400 font-mono">Real-time update</span>
         </div>
-        
+
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left border-collapse">
                 <thead>
@@ -111,12 +125,39 @@
                         <th class="p-4 font-medium">Alokasi / Informasi</th>
                     </tr>
                 </thead>
-                <tbody id="badanTabelLog" class="divide-y divide-slate-100 bg-white">
-                    <tr id="barisKosong">
-                        <td colspan="6" class="p-8 text-center text-slate-400 italic bg-slate-50/30">
-                            Belum ada pemakaian bahan pembantu yang diinput.
-                        </td>
-                    </tr>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    @forelse($mutasiks as $log)
+                        <tr class="hover:bg-slate-50/80 text-slate-700 transition border-b border-slate-100">
+                            <td class="p-4 text-xs text-slate-500 font-mono">{{ \Carbon\Carbon::parse($log->tanggal)->format('d-m-Y') }}</td>
+                            <td class="p-4 font-semibold text-slate-900">{{ $log->materialPembantu->nama_material ?? '-' }}</td>
+                            <td class="p-4 text-center">
+                                @php
+                                    $badgeWarna = match($log->jenis_transaksi) {
+                                        'Barang Masuk' => 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
+                                        'Barang Keluar' => 'bg-rose-50 text-rose-700 border-rose-200/80',
+                                        'Stok Awal' => 'bg-blue-50 text-blue-700 border-blue-200/80',
+                                        default => 'bg-slate-100 text-slate-700 border-slate-200',
+                                    };
+                                @endphp
+                                <span class="px-2.5 py-1 text-[11px] font-bold rounded-lg border {{ $badgeWarna }}">{{ $log->jenis_transaksi }}</span>
+                            </td>
+                            <td class="p-4 text-xs text-slate-600">{{ $log->keterangan }}</td>
+                            <td class="p-4 text-right font-mono font-bold text-slate-900">{{ $log->kuantitas }} {{ $log->materialPembantu->satuan ?? '' }}</td>
+                            <td class="p-4 text-xs">
+                                @if($log->jenis_transaksi === 'Barang Keluar')
+                                    <span class="flex items-center gap-1 text-rose-600 font-medium">🔴 Keluar Ke: <b class="text-slate-800">{{ $log->asal_atau_proyek }}</b></span>
+                                @else
+                                    <span class="flex items-center gap-1 text-emerald-600 font-medium">🟢 Masuk Dari: <b class="text-slate-800">{{ $log->asal_atau_proyek }}</b></span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="p-8 text-center text-slate-400 italic bg-slate-50/30">
+                                Belum ada pemakaian bahan pembantu yang diinput.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -127,16 +168,19 @@
 <script>
     document.getElementById('tglTransaksi').valueAsDate = new Date();
 
-    const dataBahanPembantu = {
-        "perekat_pengikat": ["Lem", "Sekrup"],
-        "cairan_finishing": ["Cat", "Thinner", "Cairan Kimia H2O2"],
-        "pendukung_finishing": ["Amplas"]
-    };
+    // Data dari database: { kategori_id: [ { id, nama }, ... ] }
+    const dataBahanPembantu = @json($categories->mapWithKeys(function ($cat) {
+        return [$cat->id => $cat->materialPembantus->map(function ($item) {
+            return ['id' => $item->id, 'nama' => $item->nama_material];
+        })];
+    }));
+
+    const inputClass = "w-full border border-slate-200 p-3 text-sm rounded-xl focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none bg-white transition";
 
     function updateItemDropdown() {
         const sub = document.getElementById('subKategori').value;
         const itemSelect = document.getElementById('itemBarang');
-        
+
         itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>';
         document.getElementById('wrapperSpesifikasi').classList.add('hidden');
 
@@ -148,9 +192,9 @@
 
         itemSelect.disabled = false;
         itemSelect.className = "w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none transition";
-        
-        dataBahanPembantu[sub].forEach(item => {
-            itemSelect.innerHTML += `<option value="${item}">${item}</option>`;
+
+        (dataBahanPembantu[sub] || []).forEach(item => {
+            itemSelect.innerHTML += `<option value="${item.id}" data-nama="${item.nama}">${item.nama}</option>`;
         });
     }
 
@@ -168,19 +212,34 @@
         }
     }
 
+    /**
+     * Deteksi jenis kalkulasi berdasarkan nama_material dari database.
+     * Pola ini meneruskan ide "sub.includes('amplas')" dari versi sebelumnya,
+     * tapi diperluas untuk semua jenis item bahan pembantu.
+     */
+    function deteksiJenisItem(namaMaterial) {
+        const nama = namaMaterial.toLowerCase();
+        if (nama.includes('lem')) return 'lem';
+        if (nama.includes('sekrup')) return 'sekrup';
+        if (nama.includes('cat') || nama.includes('thinner') || nama.includes('h2o2')) return 'cairan';
+        if (nama.includes('amplas')) return 'amplas';
+        return null;
+    }
+
     function renderSpesifikasiForm() {
-        const item = document.getElementById('itemBarang').value;
+        const itemSelect = document.getElementById('itemBarang');
         const wrapper = document.getElementById('wrapperSpesifikasi');
         const areaForm = document.getElementById('areaFormDinamis');
 
-        if (!item) { wrapper.classList.add('hidden'); return; }
+        if (!itemSelect.value) { wrapper.classList.add('hidden'); return; }
+
+        const namaMaterial = itemSelect.options[itemSelect.selectedIndex].getAttribute('data-nama');
+        const jenis = deteksiJenisItem(namaMaterial);
+
         wrapper.classList.remove('hidden');
         areaForm.innerHTML = "";
 
-        // Menggunakan grid horizontal md:grid-cols-3 / md:grid-cols-4 agar form memanjang ke samping
-        const inputClass = "w-full border border-slate-200 p-3 text-sm rounded-xl focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-none bg-white transition";
-
-        if (item === 'Lem') {
+        if (jenis === 'lem') {
             areaForm.className = "grid grid-cols-1 md:grid-cols-3 gap-4 text-sm";
             areaForm.innerHTML = `
                 <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Merek & Nama Lem</label>
@@ -193,10 +252,10 @@
                         <option>Kilo</option><option>Liter</option><option>Pcs</option>
                     </select>
                 </div>
-                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Quantity</label><input type="number" id="p_qty" value="1" class="${inputClass}" required></div>
+                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Quantity</label><input type="number" id="p_qty" value="1" min="0" step="0.01" class="${inputClass}" required></div>
             `;
         }
-        else if (item === 'Sekrup') {
+        else if (jenis === 'sekrup') {
             areaForm.className = "grid grid-cols-1 md:grid-cols-4 gap-4 text-sm";
             areaForm.innerHTML = `
                 <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Merek</label><input type="text" id="s_merk" placeholder="Contoh: Moon Lion" class="${inputClass}" required></div>
@@ -206,18 +265,18 @@
                         <option>Pcs</option><option>Kotak</option>
                     </select>
                 </div>
-                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Quantity</label><input type="number" id="s_qty" value="1" class="${inputClass}" required></div>
+                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Quantity</label><input type="number" id="s_qty" value="1" min="0" step="0.01" class="${inputClass}" required></div>
             `;
         }
-        else if (item === 'Cat' || item === 'Thinner' || item === 'Cairan Kimia H2O2') {
+        else if (jenis === 'cairan') {
             areaForm.className = "grid grid-cols-1 md:grid-cols-3 gap-4 text-sm";
             areaForm.innerHTML = `
                 <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Merek</label><input type="text" id="c_merk" placeholder="Contoh: Impra / Propan" class="${inputClass}" required></div>
                 <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Jenis Lapisan/Kimia</label><input type="text" id="c_jenis" placeholder="Contoh: NC Clear, PU" class="${inputClass}" required></div>
-                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Volume (Liter)</label><input type="number" id="c_qty" value="1" class="${inputClass}" required></div>
+                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Volume (Liter)</label><input type="number" id="c_qty" value="1" min="0" step="0.01" class="${inputClass}" required></div>
             `;
         }
-        else if (item === 'Amplas') {
+        else if (jenis === 'amplas') {
             areaForm.className = "grid grid-cols-1 md:grid-cols-4 gap-4 text-sm items-end";
             areaForm.innerHTML = `
                 <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Merek & Jenis</label><input type="text" id="a_merk" placeholder="Contoh: Taiyo / Ekamant" class="${inputClass}" required></div>
@@ -228,15 +287,27 @@
                 </div>
                 <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Satuan Input Utama</label>
                     <select id="a_satuan" class="${inputClass}" onchange="hitungKonversiAmplas()">
-                        <option value="Roll">1 Roll (50 M)</option><option value="Lembaran">Lembaran</option><option value="Pcs</option>
+                        <option value="Roll">1 Roll (50 M)</option><option value="Lembaran">Lembaran</option><option value="Pcs">Pcs</option>
                     </select>
                 </div>
-                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Jumlah</label><input type="number" id="a_qty" value="1" class="${inputClass}" oninput="hitungKonversiAmplas()" required></div>
+                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Jumlah</label><input type="number" id="a_qty" value="1" min="0" step="0.01" class="${inputClass}" oninput="hitungKonversiAmplas()" required></div>
                 <div class="md:col-span-4 bg-blue-50 text-blue-900 p-3 rounded-xl border border-blue-100 font-mono text-[11px] font-semibold text-center leading-relaxed shadow-sm mt-1" id="calcPreviewAmplas">
                     Matriks Gudang: Setara dengan 50 Meter Stok Induk.
                 </div>
             `;
             hitungKonversiAmplas();
+        }
+        else {
+            // Item tanpa kalkulasi khusus: hanya kuantitas biasa
+            areaForm.className = "grid grid-cols-1 md:grid-cols-2 gap-4 text-sm";
+            areaForm.innerHTML = `
+                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Satuan</label>
+                    <input type="text" id="x_satuan" placeholder="Contoh: Pcs, Liter, Kg" class="${inputClass}">
+                </div>
+                <div><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Quantity</label>
+                    <input type="number" id="x_qty" value="1" min="0" step="0.01" class="${inputClass}" required>
+                </div>
+            `;
         }
     }
 
@@ -248,97 +319,72 @@
         if (sat === 'Roll') {
             const totalMeter = val * 50;
             preview.innerText = `Matriks Gudang: Input ${val} Roll = Otomatis kalkulasi ${totalMeter} Meter Stok Induk.`;
-            return `${totalMeter} Meter`;
         } else {
             preview.innerText = `Matriks Gudang: Dicatat flat sesuai nominal unit: ${val} ${sat}.`;
-            return `${val} ${sat}`;
         }
     }
 
-    function simpanKeLogSistem() {
-        const item = document.getElementById('itemBarang').value;
-        if (!item) { alert('Silakan tentukan item material pembantu!'); return; }
-
-        const tgl = document.getElementById('tglTransaksi').value;
-        const jenis = document.getElementById('jenisTransaksi').value;
-        const emptyRow = document.getElementById('barisKosong');
-
-        let detailKarakteristik = "";
-        let kuantitasFinal = "";
-        let logistikKet = "";
-
-        if (jenis === 'Barang Keluar') {
-            const proyek = document.getElementById('namaProyek').value || "Project Global";
-            logistikKet = `<span class="flex items-center gap-1 text-rose-600 font-medium">🔴 Keluar Ke: <b class="text-slate-800">${proyek}</b></span>`;
-        } else {
-            const asal = document.getElementById('asalBarang').value || "Stok Gudang Awal";
-            logistikKet = `<span class="flex items-center gap-1 text-emerald-600 font-medium">🟢 Masuk Dari: <b class="text-slate-800">${asal}</b></span>`;
+    /**
+     * Dipanggil saat tombol submit ditekan.
+     * Mengisi hidden input (merk, spesifikasi, satuan_input, kuantitas)
+     * berdasarkan jenis item yang aktif, sebelum form benar-benar dikirim
+     * ke server via route Laravel (material.pembantu.store).
+     */
+    function siapkanSubmit() {
+        const itemSelect = document.getElementById('itemBarang');
+        if (!itemSelect.value) {
+            alert('Silakan tentukan item material pembantu!');
+            return false;
         }
 
-        if (item === 'Lem') {
-            const namaLem = document.getElementById('p_nama').value;
-            const sat = document.getElementById('p_satuan').value;
-            const qty = document.getElementById('p_qty').value;
-            kuantitasFinal = `${qty} ${sat}`;
-            detailKarakteristik = `Jenis Perekat: ${namaLem}`;
-        } 
-        else if (item === 'Sekrup') {
-            const merk = document.getElementById('s_merk').value || "-";
-            const uk = document.getElementById('s_ukuran').value || "-";
-            const sat = document.getElementById('s_satuan').value;
-            const qty = document.getElementById('s_qty').value;
-            kuantitasFinal = `${qty} ${sat}`;
-            detailKarakteristik = `Merk: ${merk} | Spek: ${uk}`;
+        const namaMaterial = itemSelect.options[itemSelect.selectedIndex].getAttribute('data-nama');
+        const jenis = deteksiJenisItem(namaMaterial);
+
+        let merk = "", spesifikasi = "", satuanInput = "", kuantitas = "";
+
+        if (jenis === 'lem') {
+            merk = document.getElementById('p_nama').value;
+            satuanInput = document.getElementById('p_satuan').value;
+            kuantitas = document.getElementById('p_qty').value;
         }
-        else if (item === 'Cat' || item === 'Thinner' || item === 'Cairan Kimia H2O2') {
-            const merk = document.getElementById('c_merk').value || "-";
-            const jns = document.getElementById('c_jenis').value || "-";
-            const qty = document.getElementById('c_qty').value;
-            kuantitasFinal = `${qty} Liter`;
-            detailKarakteristik = `Merk: ${merk} | Spek: ${jns}`;
+        else if (jenis === 'sekrup') {
+            merk = document.getElementById('s_merk').value;
+            spesifikasi = document.getElementById('s_ukuran').value;
+            satuanInput = document.getElementById('s_satuan').value;
+            kuantitas = document.getElementById('s_qty').value;
         }
-        else if (item === 'Amplas') {
-            const merk = document.getElementById('a_merk').value || "-";
-            const grit = document.getElementById('a_grit').value;
-            const sat = document.getElementById('a_satuan').value;
-            const qty = document.getElementById('a_qty').value;
+        else if (jenis === 'cairan') {
+            merk = document.getElementById('c_merk').value;
+            spesifikasi = document.getElementById('c_jenis').value;
+            satuanInput = "Liter";
+            kuantitas = document.getElementById('c_qty').value;
+        }
+        else if (jenis === 'amplas') {
+            merk = document.getElementById('a_merk').value;
+            spesifikasi = `Grit ${document.getElementById('a_grit').value}`;
+            satuanInput = document.getElementById('a_satuan').value;
 
-            if (sat === 'Roll') {
-                kuantitasFinal = `${qty * 50} Meter`;
-                detailKarakteristik = `Merek: ${merk} | Grit: ${grit} (Konversi ${qty} Roll)`;
-            } else {
-                kuantitasFinal = `${qty} ${sat}`;
-                detailKarakteristik = `Merek: ${merk} | Grit: ${grit}`;
-            }
+            const qtyInput = parseFloat(document.getElementById('a_qty').value) || 0;
+            // Konversi: Roll selalu disimpan sebagai meter di kolom kuantitas,
+            // satuan_input tetap menyimpan pilihan asli user ("Roll").
+            kuantitas = satuanInput === 'Roll' ? (qtyInput * 50) : qtyInput;
+        }
+        else {
+            satuanInput = document.getElementById('x_satuan')?.value || "";
+            kuantitas = document.getElementById('x_qty')?.value || "";
         }
 
-        if (emptyRow) emptyRow.remove();
+        if (!kuantitas || parseFloat(kuantitas) <= 0) {
+            alert('Kuantitas harus diisi dan lebih dari 0!');
+            return false;
+        }
 
-        const tbody = document.getElementById('badanTabelLog');
-        const row = document.createElement('tr');
-        row.className = "hover:bg-slate-50/80 text-slate-700 transition border-b border-slate-100";
+        document.getElementById('inputMerk').value = merk;
+        document.getElementById('inputSpesifikasi').value = spesifikasi;
+        document.getElementById('inputSatuanInput').value = satuanInput;
+        document.getElementById('inputKuantitas').value = kuantitas;
 
-        let badgeWarna = "bg-slate-100 text-slate-700 border-slate-200";
-        if (jenis === 'Barang Masuk') badgeWarna = "bg-emerald-50 text-emerald-700 border-emerald-200/80";
-        if (jenis === 'Barang Keluar') badgeWarna = "bg-rose-50 text-rose-700 border-rose-200/80";
-        if (jenis === 'Stok Awal') badgeWarna = "bg-blue-50 text-blue-700 border-blue-200/80";
-
-        row.innerHTML = `
-            <td class="p-4 text-xs text-slate-500 font-mono">${tgl}</td>
-            <td class="p-4 font-semibold text-slate-900">${item}</td>
-            <td class="p-4 text-center"><span class="px-2.5 py-1 text-[11px] font-bold rounded-lg border ${badgeWarna}">${jenis}</span></td>
-            <td class="p-4 text-xs text-slate-600">${detailKarakteristik}</td>
-            <td class="p-4 text-right font-mono font-bold text-slate-900">${kuantitasFinal}</td>
-            <td class="p-4 text-xs">${logistikKet}</td>
-        `;
-
-        tbody.insertBefore(row, tbody.firstChild);
-
-        document.getElementById('formBahanPembantu').reset();
-        document.getElementById('itemBarang').disabled = true;
-        document.getElementById('wrapperSpesifikasi').classList.add('hidden');
-        document.getElementById('tglTransaksi').valueAsDate = new Date();
-        aturFormLogistik();
+        return true; // lanjutkan submit form ke server
     }
 </script>
 @endsection
