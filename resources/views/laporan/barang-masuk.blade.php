@@ -2,6 +2,7 @@
 
 @section('content')
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
     @media print {
@@ -41,7 +42,7 @@
             <p class="text-sm text-slate-500 mt-0.5">Monitoring real-time untuk penambahan stok Material Pokok dan Material Pembantu</p>
         </div>
         
-        <div class="flex items-center gap-2 mt-4 md:mt-0 no-print">
+        <div id="actionContainer" class="flex flex-wrap items-center gap-2 mt-4 md:mt-0 no-print">
             <select id="filterJenisBahan" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none" onchange="filterLaporan()">
                 <option value="semua">Semua Jenis Bahan</option>
                 <option value="Pokok">Material Pokok Utama</option>
@@ -50,6 +51,10 @@
 
             <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-all">
                 <span>🖨️</span> Cetak Laporan
+            </button>
+
+            <button onclick="downloadPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-all">
+                <span>📥</span> Download PDF
             </button>
         </div>
     </div>
@@ -83,6 +88,7 @@
             <table class="w-full text-sm text-left border-collapse">
                 <thead>
                     <tr class="bg-slate-900 text-slate-300 text-xs uppercase tracking-wider border-b border-slate-700">
+                        <th class="p-3.5 font-semibold text-center w-12">No.</th>
                         <th class="p-3.5 font-semibold">Tanggal</th>
                         <th class="p-3.5 font-semibold">Kelompok Modul</th>
                         <th class="p-3.5 font-semibold">Nama Item Material</th>
@@ -93,6 +99,7 @@
                 </thead>
                 <tbody id="tabelMasuk" class="divide-y divide-slate-100">
                     <tr class="baris-data hover:bg-slate-50 text-slate-700 transition-colors" data-kategori="Pokok">
+                        <td class="p-3.5 text-center font-medium text-slate-400">1</td>
                         <td class="p-3.5 text-xs text-slate-400 whitespace-nowrap">06/15/2026</td>
                         <td class="p-3.5"><span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-600">Material Pokok</span></td>
                         <td class="p-3.5 font-medium text-slate-800">Kayu Jati</td>
@@ -101,6 +108,7 @@
                         <td class="p-3.5 text-xs text-slate-500">PT. Jati Permai</td>
                     </tr>
                     <tr class="baris-data hover:bg-slate-50 text-slate-700 transition-colors" data-kategori="Pembantu">
+                        <td class="p-3.5 text-center font-medium text-slate-400">2</td>
                         <td class="p-3.5 text-xs text-slate-400 whitespace-nowrap">06/15/2026</td>
                         <td class="p-3.5"><span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-50 text-blue-600">Bahan Pembantu</span></td>
                         <td class="p-3.5 font-medium text-slate-800">Lem Putih PVAc</td>
@@ -115,6 +123,7 @@
 </div>
 
 <script>
+    // Fungsi Filter Laporan
     function filterLaporan() {
         const filterValue = document.getElementById('filterJenisBahan').value;
         const rows = document.querySelectorAll('.baris-data');
@@ -136,6 +145,41 @@
         document.getElementById('widgetTotal').innerText = `${totalTerlihat} Transaksi`;
         document.getElementById('widgetPokok').innerText = `${pokokCount} Log`;
         document.getElementById('widgetPembantu').innerText = `${pembantuCount} Log`;
+
+        // Menyusun kembali urutan nomor 1, 2, 3 secara dinamis saat di-filter
+        reindexNomorTabel();
+    }
+
+    // Fungsi Otomatis Mengurutkan Nomor Tabel
+    function reindexNomorTabel() {
+        const rows = document.querySelectorAll('.baris-data:not(.hidden)');
+        rows.forEach((row, index) => {
+            row.querySelector('td:first-child').innerText = index + 1;
+        });
+    }
+
+    // FUNGSI JAVASCRIPT UNTUK DOWNLOAD PDF
+    function downloadPDF() {
+        // Sembunyikan bagian tombol aksi & filter agar tidak masuk ke PDF
+        const actionContainer = document.getElementById('actionContainer');
+        actionContainer.style.display = 'none';
+
+        // Ambil container utama laporan
+        const element = document.getElementById('areaCetakUtama');
+        
+        // Konfigurasi dokumen PDF (Format Landscape A4 sangat cocok untuk tabel)
+        const opsi = {
+            margin:       12,
+            filename:     'Laporan_Barang_Masuk_PKSD.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+
+        // Render HTML ke PDF, simpan otomatis, lalu munculkan kembali tombol filter di web
+        html2pdf().set(opsi).from(element).save().then(() => {
+            actionContainer.style.display = 'flex';
+        });
     }
 </script>
 @endsection

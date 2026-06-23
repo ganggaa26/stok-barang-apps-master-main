@@ -1,183 +1,200 @@
-@extends('layouts.admin') 
+@extends('layouts.admin')
+
 @section('content')
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PKSD-Inventory | Jurnal & Rekapitulasi</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-[#f8fafc] text-[#1e293b] min-h-screen">
+<style>
+    @media print {
+        /* Sembunyikan sidebar, navbar bawaan layouts.admin, tombol cetak, dan filter dropdown */
+        body *, .no-print, #filterJenisBahan, button, nav, aside {
+            display: none !important;
+        }
+        /* Tampilkan hanya area laporan utama */
+        #areaCetakUtama, #areaCetakUtama * {
+            display: block !important;
+        }
+        /* Pastikan layout tabel melebar penuh saat diprint */
+        #areaCetakUtama {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        /* Pertahankan background warna badge saat dicetak */
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+    }
+</style>
 
-    <div class="flex">
-        <aside class="w-64 bg-[#1e2229] text-gray-400 min-h-screen p-4 flex flex-col justify-between">
-            <div>
-               
-                
-            
-                    <div class="pt-4 text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">
-                        Manajemen Material
-                    </div>
-                    <a href="#" class="flex items-center justify-between px-3 py-2.5 rounded-md bg-[#262c36] text-white transition mt-1">
-                        <div class="flex items-center space-x-3">
-                            <span>📦</span> <span>Bahan Baku</span>
-                        </div>
-                        <span class="text-xs">▼</span>
-                    </a>
-
-                    <div class="pt-4 text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">
-                        Data Master
-                    </div>
-                    <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-md hover:bg-[#262c36] hover:text-white transition">
-                        <span>🏷️</span> <span>Kategori Material</span>
-                    </a>
-                    <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-md hover:bg-[#262c36] hover:text-white transition">
-                        <span>🤝</span> <span>Supplier</span>
-                    </a>
-
-                    <div class="pt-4 text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">
-                        Aktivitas Gudang
-                    </div>
-                    <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-md hover:bg-[#262c36] hover:text-white transition">
-                        <span>📥</span> <span>Barang Masuk</span>
-                    </a>
-                    <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-md hover:bg-[#262c36] hover:text-white transition">
-                        <span>📤</span> <span>Barang Keluar</span>
-                    </a>
-
-                    <div class="pt-4 text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">
-                        Pelaporan
-                    </div>
-                    <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-md bg-[#262c36] text-white font-medium">
-                        <span>📋</span> <span>Laporan Stok</span>
-                    </a>
-                    <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-md hover:bg-[#262c36] hover:text-white transition">
-                        <span>📉</span> <span>Laporan Barang Masuk</span>
-                    </a>
-                </nav>
+<div id="areaCetakUtama" class="w-full mx-auto my-2 text-slate-700">
+    
+    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-4">
+        <div>
+            <div class="flex items-center space-x-2 text-xs text-slate-400 font-medium mb-1 no-print">
+                <span>Pelaporan</span>
+                <span>/</span>
+                <span class="text-emerald-600">Laporan Stok</span>
             </div>
-            
-            <div class="text-xs text-gray-500 text-center py-2 border-t border-gray-700">
-                v1.0.0 &copy; 2026 PT Pelangi Kreasi Solusi
-            </div>
-        </aside>
-
-        <main class="flex-1 p-8">
-            
+            <h1 class="text-2xl font-bold tracking-tight text-slate-800">Jurnal & Rekapitulasi Stok Gudang</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Monitoring real-time untuk ketersediaan material pokok dan bahan pembantu</p>
+        </div>
         
+        <div id="actionContainer" class="flex flex-wrap items-center gap-2 mt-4 md:mt-0 no-print">
+            <select id="filterJenisBahan" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none" onchange="filterLaporan()">
+                <option value="semua">Semua Jenis Bahan</option>
+                <option value="Pokok">Material Pokok Utama</option>
+                <option value="Pembantu">Bahan Pembantu & Consumables</option>
+            </select>
 
-            <div class="flex justify-between items-start mb-6">
-                <div>
-                    <nav class="text-xs text-gray-400 space-x-2 mb-1">
-                        <a href="#" class="hover:underline">Pelaporan</a>
-                        <span>/</span>
-                        <a href="#" class="text-indigo-600 font-medium">Laporan Stok Aktual</a>
-                    </nav>
-                    <h1 class="text-2xl font-bold text-slate-900">Jurnal &amp; Rekapitulasi Stok Material</h1>
-                    <p class="text-sm text-slate-500 mt-1">Monitoring real-time untuk saldo fisik Material Pokok dan Material Pembantu saat ini.</p>
-                </div>
-                
-                <div class="flex space-x-3">
-                    <select class="bg-white border border-slate-200 text-sm rounded-lg px-4 py-2.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option>Semua Jenis Bahan</option>
-                        <option>Material Pokok</option>
-                        <option>Bahan Pembantu</option>
-                    </select>
-                    <button class="bg-[#1e2229] hover:bg-slate-800 text-white text-sm px-5 py-2.5 rounded-lg font-medium shadow-sm flex items-center space-x-2 transition">
-                        <span>🖨️</span> <span>Cetak Laporan</span>
-                    </button>
-                </div>
-            </div>
+            <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-all">
+                <span>🖨️</span> Cetak Laporan
+            </button>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white border border-slate-200/80 rounded-xl p-5 flex justify-between items-center shadow-sm">
-                    <div>
-                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Item Terdaftar</p>
-                        <h3 class="text-2xl font-bold text-slate-800 mt-1">4 Item</h3>
-                    </div>
-                    <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-xl text-blue-500">📋</div>
-                </div>
-                <div class="bg-white border border-slate-200/80 rounded-xl p-5 flex justify-between items-center shadow-sm">
-                    <div>
-                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Mutasi Material Pokok</p>
-                        <h3 class="text-2xl font-bold text-indigo-600 mt-1">2 Log</h3>
-                    </div>
-                    <div class="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center text-xl text-indigo-500">🪵</div>
-                </div>
-                <div class="bg-white border border-slate-200/80 rounded-xl p-5 flex justify-between items-center shadow-sm">
-                    <div>
-                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Mutasi Bahan Pembantu</p>
-                        <h3 class="text-2xl font-bold text-amber-600 mt-1">2 Log</h3>
-                    </div>
-                    <div class="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center text-xl text-amber-500">🧪</div>
-                </div>
-            </div>
-
-            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-[#0f172a] text-white text-xs font-semibold uppercase tracking-wider">
-                            <th class="py-4 px-6 text-center w-12">No</th>
-                            <th class="py-4 px-6">Kelompok Modul</th>
-                            <th class="py-4 px-6">Nama Item Material</th>
-                            <th class="py-4 px-6">Spesifikasi Teknis / Lokasi</th>
-                            <th class="py-4 px-6 text-right">Stok Akhir Aktual</th>
-                            <th class="py-4 px-6 text-center">Asal / Supplier</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 text-sm text-slate-700">
-                        <tr class="hover:bg-slate-50/80 transition">
-                            <td class="py-4 px-6 text-center font-medium text-slate-400">1</td>
-                            <td class="py-4 px-6">
-                                <span class="bg-indigo-50 text-indigo-700 text-xs font-medium px-2.5 py-1 rounded-md">Material Pokok</span>
-                            </td>
-                            <td class="py-4 px-6 font-semibold text-slate-900">Kayu Jati</td>
-                            <td class="py-4 px-6 text-xs text-slate-500">Grade: A | Lokasi: Gudang A Utama (10 Pcs)</td>
-                            <td class="py-4 px-6 text-right font-bold text-emerald-600">+ 10.2000 M³</td>
-                            <td class="py-4 px-6 text-center text-xs text-slate-500">PT. Jati Permai</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50/80 transition">
-                            <td class="py-4 px-6 text-center font-medium text-slate-400">2</td>
-                            <td class="py-4 px-6">
-                                <span class="bg-indigo-50 text-indigo-700 text-xs font-medium px-2.5 py-1 rounded-md">Material Pokok</span>
-                            </td>
-                            <td class="py-4 px-6 font-semibold text-slate-900">Kayu Mahoni</td>
-                            <td class="py-4 px-6 text-xs text-slate-500">Grade: B | Lokasi: Gudang A Samping</td>
-                            <td class="py-4 px-6 text-right font-bold text-emerald-600">+ 2.2500 M³</td>
-                            <td class="py-4 px-6 text-center text-xs text-slate-500">CV. Rimba Raya</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50/80 transition">
-                            <td class="py-4 px-6 text-center font-medium text-slate-400">3</td>
-                            <td class="py-4 px-6">
-                                <span class="bg-amber-50 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-md">Bahan Pembantu</span>
-                            </td>
-                            <td class="py-4 px-6 font-semibold text-slate-900">Lem Putih PVAc</td>
-                            <td class="py-4 px-6 text-xs text-slate-500">Merk: Crona (1 Kg)</td>
-                            <td class="py-4 px-6 text-right font-bold text-emerald-600">+ 65 Pcs</td>
-                            <td class="py-4 px-6 text-center text-xs text-slate-500">Toko Kimia Utama</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50/80 transition">
-                            <td class="py-4 px-6 text-center font-medium text-slate-400">4</td>
-                            <td class="py-4 px-6">
-                                <span class="bg-amber-50 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-md">Bahan Pembantu</span>
-                            </td>
-                            <td class="py-4 px-6 font-semibold text-slate-900">Paku Tembak F30</td>
-                            <td class="py-4 px-6 text-xs text-slate-500">Box isi 5000 pcs | Lokasi: Rak Aksesoris B3</td>
-                            <td class="py-4 px-6 text-right font-bold text-rose-600">+ 20 Pcs</td>
-                            <td class="py-4 px-6 text-center text-xs text-slate-500">PT. Teknik Makmur</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-        </main>
+            <button onclick="downloadPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-all">
+                <span>📥</span> Download PDF
+            </button>
+        </div>
     </div>
 
-</body>
-</html>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Item Terlihat</p>
+                <h3 id="widgetTotal" class="text-2xl font-bold text-slate-800 mt-1">2 Material</h3>
+            </div>
+            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg text-xl">📦</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Stok Material Pokok</p>
+                <h3 id="widgetPokok" class="text-2xl font-bold text-indigo-600 mt-1">1 Item</h3>
+            </div>
+            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-lg text-xl">🪵</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Stok Bahan Pembantu</p>
+                <h3 id="widgetPembantu" class="text-2xl font-bold text-blue-600 mt-1">1 Item</h3>
+            </div>
+            <div class="p-3 bg-blue-50 text-blue-600 rounded-lg text-xl">🧪</div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+        <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <table class="w-full text-sm text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-900 text-slate-300 text-xs uppercase tracking-wider border-b border-slate-700">
+                        <th class="p-3.5 font-semibold text-center w-12">No.</th>
+                        <th class="p-3.5 font-semibold">Kode</th>
+                        <th class="p-3.5 font-semibold">Nama Item Material</th>
+                        <th class="p-3.5 font-semibold">Kelompok</th>
+                        <th class="p-3.5 font-semibold text-right">Stok Awal</th>
+                        <th class="p-3.5 font-semibold text-right text-emerald-400">Masuk (+)</th>
+                        <th class="p-3.5 font-semibold text-right text-rose-400">Keluar (-)</th>
+                        <th class="p-3.5 font-semibold text-right">Stok Akhir</th>
+                        <th class="p-3.5 font-semibold text-center">Satuan</th>
+                        <th class="p-3.5 font-semibold text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelStok" class="divide-y divide-slate-100">
+                    <tr class="baris-data hover:bg-slate-50 text-slate-700 transition-colors" data-kategori="Pokok">
+                        <td class="p-3.5 text-center font-medium text-slate-400">1</td>
+                        <td class="p-3.5 font-bold text-slate-800 whitespace-nowrap">MAT-001</td>
+                        <td class="p-3.5">
+                            <span class="font-semibold text-slate-800 block">Kayu Jati Gelondongan</span>
+                            <span class="text-xs text-slate-400 block mt-0.5">Grade: A | Lokasi: Gudang A (Blok A-1)</span>
+                        </td>
+                        <td class="p-3.5"><span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-600 whitespace-nowrap">Material Pokok</span></td>
+                        <td class="p-3.5 text-right font-mono text-slate-500">3.0000</td>
+                        <td class="p-3.5 text-right font-mono font-semibold text-emerald-600">+ 0.2000</td>
+                        <td class="p-3.5 text-right font-mono font-semibold text-rose-600">- 0.2000</td>
+                        <td class="p-3.5 text-right font-mono font-bold text-rose-500">3.0000</td>
+                        <td class="p-3.5 text-center text-xs font-semibold text-slate-400">M³</td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-rose-50 text-rose-600 whitespace-nowrap">Butuh Restock</span>
+                        </td>
+                    </tr>
+                    <tr class="baris-data hover:bg-slate-50 text-slate-700 transition-colors" data-kategori="Pembantu">
+                        <td class="p-3.5 text-center font-medium text-slate-400">2</td>
+                        <td class="p-3.5 font-bold text-slate-800 whitespace-nowrap">MAT-002</td>
+                        <td class="p-3.5">
+                            <span class="font-semibold text-slate-800 block">Lem Putih PVAc</span>
+                            <span class="text-xs text-slate-400 block mt-0.5">Merk: Crona (1 Kg)</span>
+                        </td>
+                        <td class="p-3.5"><span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-50 text-blue-600 whitespace-nowrap">Bahan Pembantu</span></td>
+                        <td class="p-3.5 text-right font-mono text-slate-500">0</td>
+                        <td class="p-3.5 text-right font-mono font-semibold text-emerald-600">+ 5</td>
+                        <td class="p-3.5 text-right font-mono font-semibold text-rose-600">- 3</td>
+                        <td class="p-3.5 text-right font-mono font-bold text-slate-800">2</td>
+                        <td class="p-3.5 text-center text-xs font-semibold text-slate-400">Pcs</td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-rose-50 text-rose-600 whitespace-nowrap">Butuh Restock</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Fungsi Filter Laporan & Update Widget Angka
+    function filterLaporan() {
+        const filterValue = document.getElementById('filterJenisBahan').value;
+        const rows = document.querySelectorAll('.baris-data');
+        let totalTerlihat = 0, pokokCount = 0, pembantuCount = 0;
+
+        rows.forEach(row => {
+            const kat = row.getAttribute('data-kategori');
+            
+            if (filterValue === 'semua' || filterValue === kat) {
+                row.classList.remove('hidden');
+                totalTerlihat++;
+                if (kat === 'Pokok') pokokCount++;
+                if (kat === 'Pembantu') pembantuCount++;
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('widgetTotal').innerText = `${totalTerlihat} Material`;
+        document.getElementById('widgetPokok').innerText = `${pokokCount} Item`;
+        document.getElementById('widgetPembantu').innerText = `${pembantuCount} Item`;
+
+        // Mengurutkan ulang nomor tabel secara dinamis (1, 2, 3...) setelah filter
+        reindexNomorTabel();
+    }
+
+    // Fungsi Otomatis Mengurutkan Nomor Tabel
+    function reindexNomorTabel() {
+        const rows = document.querySelectorAll('.baris-data:not(.hidden)');
+        rows.forEach((row, index) => {
+            row.querySelector('td:first-child').innerText = index + 1;
+        });
+    }
+
+    // Fungsi Download PDF Menggunakan html2pdf.js (Format Landscape A4)
+    function downloadPDF() {
+        const actionContainer = document.getElementById('actionContainer');
+        actionContainer.style.display = 'none';
+
+        const element = document.getElementById('areaCetakUtama');
+        
+        const opsi = {
+            margin:       12,
+            filename:     'Laporan_Stok_Gudang_PKSD.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+
+        html2pdf().set(opsi).from(element).save().then(() => {
+            actionContainer.style.display = 'flex';
+        });
+    }
+</script>
+@endsection
