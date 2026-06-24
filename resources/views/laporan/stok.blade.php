@@ -6,22 +6,19 @@
 
 <style>
     @media print {
-        /* Sembunyikan sidebar, navbar bawaan layouts.admin, tombol cetak, dan filter dropdown */
-        body *, .no-print, #filterJenisBahan, button, nav, aside {
+        body *, .no-print, #filterContainer, button, nav, aside {
             display: none !important;
         }
         /* Tampilkan hanya area laporan utama */
         #areaCetakUtama, #areaCetakUtama * {
             display: block !important;
         }
-        /* Pastikan layout tabel melebar penuh saat diprint */
         #areaCetakUtama {
             position: absolute;
             left: 0;
             top: 0;
             width: 100%;
         }
-        /* Pertahankan background warna badge saat dicetak */
         * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -31,7 +28,7 @@
 
 <div id="areaCetakUtama" class="w-full mx-auto my-2 text-slate-700">
     
-    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-4">
+    <div class="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between border-b border-slate-200 pb-4">
         <div>
             <div class="flex items-center space-x-2 text-xs text-slate-400 font-medium mb-1 no-print">
                 <span>Pelaporan</span>
@@ -42,19 +39,37 @@
             <p class="text-sm text-slate-500 mt-0.5">Monitoring real-time untuk analisis batas aman (Safety Stock) produksi manufaktur</p>
         </div>
         
-        <div id="actionContainer" class="flex flex-wrap items-center gap-2 mt-4 md:mt-0 no-print">
-            <select id="filterJenisBahan" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none" onchange="filterLaporan()">
-                <option value="semua">Semua Jenis Bahan</option>
-                <option value="Pokok">Material Pokok Utama</option>
-                <option value="Pembantu">Bahan Pembantu & Consumables</option>
-            </select>
+        <div id="actionContainer" class="flex flex-wrap items-center gap-2 mt-4 lg:mt-0 no-print">
+            <div id="filterContainer" class="flex flex-wrap items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-1.5 shadow-sm">
+                
+                <!-- INPUT CARI NAMA BARANG -->
+                <div class="bg-white border border-slate-300 rounded-lg px-2 h-8 flex items-center">
+                    <span class="text-slate-400 mr-1 text-xs">🔍</span>
+                    <input type="text" id="cariNamaItem" onkeyup="jalankanFilterGabungan()" placeholder="Cari nama barang..." class="focus:outline-none text-xs text-slate-700 bg-transparent w-36">
+                </div>
+                
+                <!-- FILTER KATEGORI -->
+                <select id="filterJenisBahan" onchange="jalankanFilterGabungan()" class="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none h-8">
+                    <option value="semua">Semua Jenis Bahan</option>
+                    <option value="Pokok">Material Pokok Utama</option>
+                    <option value="Pembantu">Bahan Pembantu & Consumables</option>
+                </select>
 
-            <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-all">
-                <span>🖨️</span> Cetak Laporan
+                <!-- FILTER PERIODE TANGGAL -->
+                <div class="flex items-center gap-1 bg-white border border-slate-300 rounded-lg px-2 h-8 text-xs">
+                    <input type="date" id="tglMulai" onchange="jalankanFilterGabungan()" class="focus:outline-none text-slate-700 bg-transparent">
+                    <span class="text-slate-400 font-medium">s.d</span>
+                    <input type="date" id="tglSelesai" onchange="jalankanFilterGabungan()" class="focus:outline-none text-slate-700 bg-transparent">
+                    <button onclick="resetSemuaFilter()" class="text-slate-400 hover:text-rose-600 px-1 font-bold text-sm" title="Reset Filter">×</button>
+                </div>
+            </div>
+
+            <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-all h-9">
+                <span>🖨️</span> Cetak
             </button>
 
-            <button onclick="downloadPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-all">
-                <span>📥</span> Download PDF
+            <button onclick="downloadPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-all h-9">
+                <span>📥</span> PDF
             </button>
         </div>
     </div>
@@ -62,7 +77,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Item Terlihat</p>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Item Terfilter</p>
                 <h3 id="widgetTotal" class="text-2xl font-bold text-slate-800 mt-1">2 Material</h3>
             </div>
             <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg text-xl">📦</div>
@@ -107,6 +122,7 @@
                         data-kategori="Pokok"
                         data-kode="MAT-001"
                         data-nama="Kayu Jati Gelondongan"
+                        data-tanggal="2026-06-15"
                         data-detail="Grade: A | Lokasi: Gudang A (Blok A-1)"
                         data-stok-awal="3.0000"
                         data-masuk="0.2000"
@@ -142,6 +158,7 @@
                         data-kategori="Pembantu"
                         data-kode="MAT-002"
                         data-nama="Plywood Alas Kerja"
+                        data-tanggal="2026-06-20"
                         data-detail="Merk: EcoPalm (9mm)"
                         data-stok-awal="5.0000"
                         data-masuk="10.0000"
@@ -172,7 +189,6 @@
                             </button>
                         </td>
                     </tr>
-
                 </tbody>
             </table>
         </div>
@@ -180,7 +196,7 @@
 </div>
 
 <div id="modalAnalisisStok" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 no-print">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 transform transition-all scale-100 space-y-5">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 space-y-5">
         
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <div class="flex items-center space-x-2">
@@ -225,8 +241,7 @@
                 <div class="pt-3 mt-2 bg-emerald-50/60 p-3 rounded-lg border border-emerald-100 text-center space-y-1">
                     <span class="text-xs font-bold text-emerald-900 uppercase tracking-wide">Rasio Perputaran Stok (Turnover Rate)</span>
                     <span id="lblTurnover" class="font-mono font-extrabold text-emerald-600 text-base block">-</span>
-                    <div id="boxRekomendasi" class="text-[11px] p-1.5 rounded mt-1 font-medium">
-                        </div>
+                    <div id="boxRekomendasi" class="text-[11px] p-1.5 rounded mt-1 font-medium"></div>
                 </div>
             </div>
         </div>
@@ -240,7 +255,70 @@
 </div>
 
 <script>
-    // FUNGSI UTAMA: MENGHITUNG KINERJA KELUAR MASUK BARANG & SAFETY STOCK
+    // LOGIKA FILTER GABUNGAN (NAMA BARANG, PERIODE WAKTU & JENIS BAHAN)
+    function jalankanFilterGabungan() {
+        const namaItemValue = document.getElementById('cariNamaItem').value.toLowerCase();
+        const jenisBahanValue = document.getElementById('filterJenisBahan').value;
+        const tglMulaiValue = document.getElementById('tglMulai').value;
+        const tglSelesaiValue = document.getElementById('tglSelesai').value;
+        const rows = document.querySelectorAll('.baris-data');
+        
+        let totalTerlihat = 0, pokokCount = 0, pembantuCount = 0;
+
+        rows.forEach(row => {
+            const tglRow = row.getAttribute('data-tanggal') || "";
+            const katRow = row.getAttribute('data-kategori');
+            const namaRow = row.getAttribute('data-nama').toLowerCase();
+            
+            let cocokNama = true;
+            let cocokTanggal = true;
+            let cocokKategori = true;
+
+            // Filter Nama Item
+            if (namaItemValue && !namaRow.includes(namaItemValue)) cocokNama = false;
+
+            // Filter Tanggal Periode (jika data-tanggal tersedia di baris)
+            if (tglMulaiValue && tglRow && tglRow < tglMulaiValue) cocokTanggal = false;
+            if (tglSelesaiValue && tglRow && tglRow > tglSelesaiValue) cocokTanggal = false;
+
+            // Filter Kategori Bahan
+            if (jenisBahanValue !== 'semua' && katRow !== jenisBahanValue) cocokKategori = false;
+
+            // Sinkronisasi status visibilitas
+            if (cocokNama && cocokTanggal && cocokKategori) {
+                row.classList.remove('hidden');
+                totalTerlihat++;
+                if (katRow === 'Pokok') pokokCount++;
+                if (katRow === 'Pembantu') pembantuCount++;
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+
+        // Update value widget informasi rekap
+        document.getElementById('widgetTotal').innerText = `${totalTerlihat} Material`;
+        document.getElementById('widgetPokok').innerText = `${pokokCount} Item`;
+        document.getElementById('widgetPembantu').innerText = `${pembantuCount} Item`;
+
+        reindexNomorTabel();
+    }
+
+    function resetSemuaFilter() {
+        document.getElementById('cariNamaItem').value = '';
+        document.getElementById('filterJenisBahan').value = 'semua';
+        document.getElementById('tglMulai').value = '';
+        document.getElementById('tglSelesai').value = '';
+        jalankanFilterGabungan();
+    }
+
+    function reindexNomorTabel() {
+        const rows = document.querySelectorAll('.baris-data:not(.hidden)');
+        rows.forEach((row, index) => {
+            row.querySelector('td:first-child').innerText = index + 1;
+        });
+    }
+
+    // AUDIT & ANALISIS SAFETY STOCK
     function analisisTurnoverStok(element) {
         const row = element.closest('tr');
         
@@ -252,7 +330,6 @@
         const stokAkhir = parseFloat(row.getAttribute('data-stok-akhir')) || 0;
         const satuan = row.getAttribute('data-satuan');
 
-        // Render ke UI modal
         document.getElementById('lblKode').innerText = kode;
         document.getElementById('lblNama').innerText = nama;
         document.getElementById('lblStokAwal').innerText = `${stokAwal.toFixed(2)} ${satuan}`;
@@ -260,7 +337,6 @@
         document.getElementById('lblKeluar').innerText = `${keluar.toFixed(2)} ${satuan}`;
         document.getElementById('lblStokAkhir').innerText = `${stokAkhir.toFixed(2)} ${satuan}`;
 
-        // Perhitungan Rumus Industri: Rasio Konsumsi (%) = (Keluar / (Stok Awal + Masuk)) * 100
         const totalKetersediaan = stokAwal + masuk;
         let rasioTurnover = 0;
         if (totalKetersediaan > 0) {
@@ -269,7 +345,6 @@
 
         document.getElementById('lblTurnover').innerText = `${rasioTurnover.toFixed(1)}% Penyerapan`;
 
-        // Pengkondisian Rekomendasi Tindakan Industri untuk Manajemen Pabrik
         const boxRec = document.getElementById('boxRekomendasi');
         if (stokAkhir <= (stokAwal * 0.5) || rasioTurnover >= 50) {
             boxRec.className = "text-[11px] p-1.5 rounded mt-1 font-medium bg-rose-50 text-rose-700 border border-rose-200";
@@ -279,7 +354,6 @@
             boxRec.innerText = "✅ REKOMENDASI: Batas kuantitas aman (Safety Stock) terpenuhi untuk siklus produksi berjalan.";
         }
 
-        // Tampilkan Modal
         document.getElementById('modalAnalisisStok').classList.remove('hidden');
     }
 
@@ -287,40 +361,7 @@
         document.getElementById('modalAnalisisStok').classList.add('hidden');
     }
 
-    // Fungsi Filter Laporan
-    function filterLaporan() {
-        const filterValue = document.getElementById('filterJenisBahan').value;
-        const rows = document.querySelectorAll('.baris-data');
-        let totalTerlihat = 0, pokokCount = 0, pembantuCount = 0;
-
-        rows.forEach(row => {
-            const kat = row.getAttribute('data-kategori');
-            
-            if (filterValue === 'semua' || filterValue === kat) {
-                row.classList.remove('hidden');
-                totalTerlihat++;
-                if (kat === 'Pokok') pokokCount++;
-                if (kat === 'Pembantu') pembantuCount++;
-            } else {
-                row.classList.add('hidden');
-            }
-        });
-
-        document.getElementById('widgetTotal').innerText = `${totalTerlihat} Material`;
-        document.getElementById('widgetPokok').innerText = `${pokokCount} Item`;
-        document.getElementById('widgetPembantu').innerText = `${pembantuCount} Item`;
-
-        reindexNomorTabel();
-    }
-
-    function reindexNomorTabel() {
-        const rows = document.querySelectorAll('.baris-data:not(.hidden)');
-        rows.forEach((row, index) => {
-            row.querySelector('td:first-child').innerText = index + 1;
-        });
-    }
-
-    // Fungsi Download PDF (Landscape A4)
+    // ENGINE PRINT TO PDF
     function downloadPDF() {
         const actionContainer = document.getElementById('actionContainer');
         actionContainer.style.display = 'none';
