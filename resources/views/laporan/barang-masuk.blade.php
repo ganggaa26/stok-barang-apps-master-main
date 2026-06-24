@@ -93,7 +93,8 @@
                         <th class="p-3.5 font-semibold">Kelompok Modul</th>
                         <th class="p-3.5 font-semibold">Nama Item Material</th>
                         <th class="p-3.5 font-semibold">Spesifikasi Teknis</th>
-                        <th class="p-3.5 font-semibold text-right">Volume / Qty Masuk</th>
+                        <th class="p-3.5 font-semibold text-center">Jml Batang/Lbr</th>
+                        <th class="p-3.5 font-semibold text-right">Vol / Luas Akhir</th>
                         <th class="p-3.5 font-semibold">Asal / Supplier</th>
                     </tr>
                 </thead>
@@ -103,7 +104,8 @@
                         <td class="p-3.5 text-xs text-slate-400 whitespace-nowrap">06/15/2026</td>
                         <td class="p-3.5"><span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-600">Material Pokok</span></td>
                         <td class="p-3.5 font-medium text-slate-800">Kayu Jati</td>
-                        <td class="p-3.5 text-xs text-slate-500">Grade: A | Lokasi: Gudang A Utama (10 Pcs)</td>
+                        <td class="p-3.5 text-xs text-slate-500">Grade: A | Lokasi: Gudang A Utama</td>
+                        <td class="p-3.5 text-center font-mono font-semibold text-slate-700 whitespace-nowrap">10 Btg</td>
                         <td class="p-3.5 text-right font-mono font-bold text-emerald-600 whitespace-nowrap">+ 0.2000 M³</td>
                         <td class="p-3.5 text-xs text-slate-500">PT. Jati Permai</td>
                     </tr>
@@ -113,6 +115,7 @@
                         <td class="p-3.5"><span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-50 text-blue-600">Bahan Pembantu</span></td>
                         <td class="p-3.5 font-medium text-slate-800">Lem Putih PVAc</td>
                         <td class="p-3.5 text-xs text-slate-500">Merk: Crona (1 Kg)</td>
+                        <td class="p-3.5 text-center font-mono font-semibold text-slate-700 whitespace-nowrap">5 Pcs</td>
                         <td class="p-3.5 text-right font-mono font-bold text-emerald-600 whitespace-nowrap">+ 5 Pcs</td>
                         <td class="p-3.5 text-xs text-slate-500">Toko Kimia Utama</td>
                     </tr>

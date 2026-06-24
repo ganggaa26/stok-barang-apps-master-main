@@ -13,7 +13,7 @@
                 <span class="text-indigo-600">Material Pokok</span>
             </div>
             <h1 class="text-2xl font-bold tracking-tight text-slate-800">Modul Inventaris: Bahan Pokok Utama</h1>
-            <p class="text-sm text-slate-500 mt-0.5">Pengelolaan logistik Kayu Solid, Olahan Kayu, dan Pelapis Lapisan Struktur</p>
+            <p class="text-sm text-slate-500 mt-0.5">Pengelolaan logistik Kayu Solid, Olahan Kayu, dan Kalkulasi Konsumsi Produk Jadi</p>
         </div>
     </div>
 
@@ -26,12 +26,15 @@
     <div class="space-y-6">
        <form id="formBahanPokok" action="{{ route('material.pokok.store') }}" method="POST" class="space-y-6" onsubmit="return siapkanSubmitPokok()">
         @csrf
+        <input type="hidden" name="_method" id="inputMethodPokok" value="POST">
 
             {{-- Hidden input: diisi JS dari hasil kalkulasi sebelum form dikirim --}}
             <input type="hidden" name="spesifikasi" id="inputSpesifikasiPokok">
             <input type="hidden" name="satuan_input" id="inputSatuanInputPokok">
             <input type="hidden" name="kuantitas" id="inputKuantitasPokok">
             <input type="hidden" name="asal_atau_proyek" id="inputAsalProyekPokok">
+            <input type="hidden" name="qty_fisik" id="inputQtyFisikPokok">
+            <input type="hidden" name="satuan_fisik" id="inputSatuanFisikPokok">
 
             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
@@ -63,7 +66,7 @@
 
             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-5">
                 <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                    <span>🚚</span> Status Logistik & Tujuan Proyek
+                    <span>🚚</span> Status Logistik & Pelacakan Proyek
                 </h3>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -79,20 +82,39 @@
                         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Tanggal</label>
                         <input type="date" id="tglTransaksi" name="tanggal" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-700 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     </div>
+
+                    <!-- Kolom Nama Proyek Permanen -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Nama Proyek</label>
+                        <input type="text" id="namaProyek" name="nama_proyek" placeholder="Contoh: Resto Namora / General" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-700 shadow-sm placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+
                     <div id="boxAsal">
                         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Asal / Supplier</label>
-                        <input type="text" id="asalBarang" placeholder="Contoh: PT. Jati Permai" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-700 shadow-sm placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <input type="text" id="asalBarang" name="asal_supplier" placeholder="Contoh: PT. Jati Permai" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-700 shadow-sm placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     </div>
-                    <div id="boxProyek" class="hidden">
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Nama Proyek / Produk Jadi</label>
-                        <input type="text" id="namaProyek" placeholder="Contoh: Meja Resepsionis" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-700 shadow-sm placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+
+                    <!-- Kolom Input Khusus Manufaktur (Hanya Muncul saat Barang Keluar) -->
+                    <div id="boxNamaProduk" class="hidden">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Nama Produk Jadi</label>
+                        <input type="text" id="namaProduk" name="nama_produk_jadi" placeholder="Contoh: Kursi Makan / Meja Bar" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-700 shadow-sm placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <div id="boxQtyProduksi" class="hidden">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Target Jumlah Unit</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="qtyProduksi" name="qty_produksi" min="1" value="1" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-700 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <span class="text-xs text-slate-400 font-medium">Unit</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="flex justify-end pt-2">
-                <button type="submit" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-6 py-2.5 rounded-lg shadow-sm hover:shadow transition-all duration-150 flex items-center justify-center gap-2">
-                    <span>💾</span> Amankan Data Stok Pokok
+            <div class="flex justify-end items-center gap-3 pt-2">
+                <button type="button" id="btnBatalEdit" onclick="batalkanEdit()" class="hidden text-sm font-medium text-slate-500 hover:text-slate-700 px-4 py-2.5">
+                    Batal Edit
+                </button>
+                <button type="submit" id="btnSubmitPokok" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-6 py-2.5 rounded-lg shadow-sm hover:shadow transition-all duration-150 flex items-center justify-center gap-2">
+                    <span>💾</span> <span id="labelSubmitPokok">Amankan Data Stok Pokok</span>
                 </button>
             </div>
         </form>
@@ -108,15 +130,32 @@
                             <th class="p-3.5 font-semibold">Tanggal</th>
                             <th class="p-3.5 font-semibold">Item Material</th>
                             <th class="p-3.5 font-semibold text-center">Status</th>
-                            <th class="p-3.5 font-semibold">Spesifikasi & Karakteristik</th>
-                            <th class="p-3.5 font-semibold text-right">Kuantitas Log</th>
-                            <th class="p-3.5 font-semibold">Pelacakan Logistik</th>
+                            <th class="p-3.5 font-semibold">Proyek</th>
+                            <th class="p-3.5 font-semibold">Spesifikasi / Lokasi</th>
+                            <th class="p-3.5 font-semibold text-center">Qty Fisik</th>
+                            <th class="p-3.5 font-semibold text-right">Vol / Luas Akhir</th>
+                            <th class="p-3.5 font-semibold">Pelacakan Alokasi / Manufaktur</th>
                             <th class="p-3.5 font-semibold text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="badanTabelLog" class="divide-y divide-slate-100">
                         @forelse($mutasiks as $log)
-                        <tr class="hover:bg-slate-50 text-slate-700 border-b border-slate-100 transition-colors text-sm baris-log-data">
+                        <tr class="hover:bg-slate-50 text-slate-700 border-b border-slate-100 transition-colors text-sm baris-log-data"
+                            data-id="{{ $log->id }}"
+                            data-material-id="{{ $log->material_id }}"
+                            data-category-id="{{ $log->material->jenis_material ?? '' }}"
+                            data-jenis-transaksi="{{ $log->jenis_transaksi }}"
+                            data-tanggal="{{ \Carbon\Carbon::parse($log->tanggal)->format('Y-m-d') }}"
+                            data-nama-proyek="{{ $log->nama_proyek }}"
+                            data-asal-supplier="{{ $log->asal_supplier }}"
+                            data-nama-produk-jadi="{{ $log->nama_produk_jadi }}"
+                            data-qty-produksi="{{ $log->qty_produksi }}"
+                            data-spesifikasi="{{ $log->spesifikasi }}"
+                            data-satuan-input="{{ $log->satuan_input }}"
+                            data-kuantitas="{{ $log->kuantitas }}"
+                            data-qty-fisik="{{ $log->qty_fisik }}"
+                            data-satuan-fisik="{{ $log->satuan_fisik }}"
+                            data-tipe-kalkulasi="{{ $log->material->tipe_kalkulasi ?? '' }}">
                             <td class="p-3.5 text-xs text-slate-400 whitespace-nowrap">{{ \Carbon\Carbon::parse($log->tanggal)->format('d-m-Y') }}</td>
                             <td class="p-3.5 font-medium text-slate-800">{{ $log->material->nama_material ?? 'N/A' }}</td>
                             <td class="p-3.5 text-center whitespace-nowrap">
@@ -124,9 +163,24 @@
                                     {{ $log->jenis_transaksi }}
                                 </span>
                             </td>
-                            <td class="p-3.5 text-xs text-slate-500">{{ $log->spesifikasi }}</td>
+                            <td class="p-3.5 font-semibold text-indigo-900">{{ $log->nama_proyek ?: '-' }}</td>
+                            <td class="p-3.5 text-xs text-slate-500">{{ $log->spesifikasi ?: '-' }}</td>
+                            <td class="p-3.5 text-center font-mono font-semibold text-slate-700 whitespace-nowrap">
+                                {{ $log->qty_fisik !== null ? rtrim(rtrim(number_format($log->qty_fisik, 2, '.', ''), '0'), '.') : '-' }} {{ $log->satuan_fisik }}
+                            </td>
                             <td class="p-3.5 text-right font-mono font-bold text-slate-800 whitespace-nowrap">{{ $log->kuantitas }} {{ $log->satuan_input }}</td>
-                            <td class="p-3.5 text-xs text-slate-500">{{ $log->asal_atau_proyek }}</td>
+                            <td class="p-3.5 text-xs text-slate-500">
+                                @if($log->jenis_transaksi === 'Barang Keluar')
+                                    <span class="text-rose-600 font-medium">🏭 Manufaktur:</span>
+                                    <span class="font-semibold">{{ $log->nama_produk_jadi ?: '-' }}</span>
+                                    @if($log->qty_produksi)
+                                        <span class="text-xs text-slate-400 font-normal">({{ $log->qty_produksi }} Unit)</span>
+                                    @endif
+                                @else
+                                    <span class="text-emerald-600 font-medium">📦 Logistik:</span>
+                                    {{ $log->asal_supplier ?: '-' }}
+                                @endif
+                            </td>
                             <td class="p-3.5 text-center whitespace-nowrap">
                                 <div class="flex items-center justify-center space-x-1.5">
                                     <button type="button" onclick="editBarisLog(this)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded transition-colors text-xs font-medium flex items-center gap-0.5 shadow-sm">
@@ -144,7 +198,7 @@
                         </tr>
                         @empty
                         <tr id="barisKosong">
-                            <td colspan="7" class="p-8 text-center text-slate-400 italic bg-slate-50/50">
+                            <td colspan="9" class="p-8 text-center text-slate-400 italic bg-slate-50/50">
                                 Belum ada mutasi material pokok yang tercatat di database.
                             </td>
                         </tr>
@@ -189,14 +243,17 @@
     function aturFormLogistik() {
         const jenis = document.getElementById('jenisTransaksi').value;
         const boxAsal = document.getElementById('boxAsal');
-        const boxProyek = document.getElementById('boxProyek');
+        const boxNamaProduk = document.getElementById('boxNamaProduk');
+        const boxQtyProduksi = document.getElementById('boxQtyProduksi');
 
         if (jenis === 'Barang Keluar') {
             boxAsal.classList.add('hidden');
-            boxProyek.classList.remove('hidden');
+            boxNamaProduk.classList.remove('hidden');
+            boxQtyProduksi.classList.remove('hidden');
         } else {
             boxAsal.classList.remove('hidden');
-            boxProyek.classList.add('hidden');
+            boxNamaProduk.classList.add('hidden');
+            boxQtyProduksi.classList.add('hidden');
         }
     }
 
@@ -294,13 +351,16 @@
         const itemOption = itemSelect.options[itemSelect.selectedIndex];
         const tipeKalkulasi = itemOption.getAttribute('data-tipe');
         let spesifikasi = "", satuanInput = "", kuantitas = 0;
+        let qtyFisik = 0, satuanFisik = "";
 
         if (tipeKalkulasi === 'volume_kayu') {
             const grade = document.getElementById('k_grade').value;
             const gudang = document.getElementById('k_gudang').value;
             kuantitas = hitungKubikasi();
             satuanInput = "M3";
-            spesifikasi = `Grade: ${grade} | Lokasi: ${gudang} (${document.getElementById('k_qty').value} Batang)`;
+            spesifikasi = `Grade: ${grade} | Lokasi: ${gudang}`;
+            qtyFisik = parseFloat(document.getElementById('k_qty').value) || 0;
+            satuanFisik = "Batang";
         }
         else if (tipeKalkulasi === 'lembar_board') {
             const merk = document.getElementById('b_merk').value;
@@ -308,6 +368,8 @@
             kuantitas = parseFloat(document.getElementById('b_qty').value) || 0;
             satuanInput = "Lembar";
             spesifikasi = `Merek: ${merk} | Tebal: ${tebal}mm`;
+            qtyFisik = kuantitas;
+            satuanFisik = "Lembar";
         }
         else if (tipeKalkulasi === 'lembar_hpl') {
             const merk = document.getElementById('h_merk').value;
@@ -315,6 +377,8 @@
             kuantitas = parseFloat(document.getElementById('h_qty').value) || 0;
             satuanInput = "Lembar";
             spesifikasi = `Merek: ${merk} | Kode: ${kode}`;
+            qtyFisik = kuantitas;
+            satuanFisik = "Lembar";
         }
         else if (tipeKalkulasi === 'luas_veneer') {
             const jenis = document.getElementById('v_jenis').value;
@@ -323,7 +387,9 @@
             const jumlahLembar = document.getElementById('v_qty').value;
             kuantitas = hitungLuasVeneer();
             satuanInput = "M2";
-            spesifikasi = `Jenis: ${jenis} | No. Bendel: ${bendel} | Tebal: ${tebal}mm | Jumlah: ${jumlahLembar} Lembar`;
+            spesifikasi = `Jenis: ${jenis} | No. Bendel: ${bendel} | Tebal: ${tebal}mm`;
+            qtyFisik = parseFloat(jumlahLembar) || 0;
+            satuanFisik = "Lembar";
         }
 
         if (!kuantitas || kuantitas <= 0) {
@@ -334,7 +400,10 @@
         document.getElementById('inputSpesifikasiPokok').value = spesifikasi;
         document.getElementById('inputSatuanInputPokok').value = satuanInput;
         document.getElementById('inputKuantitasPokok').value = kuantitas;
+        document.getElementById('inputQtyFisikPokok').value = qtyFisik;
+        document.getElementById('inputSatuanFisikPokok').value = satuanFisik;
 
+        // asal_atau_proyek (kolom lama) tetap diisi untuk kompatibilitas data lama
         const jenis = document.getElementById('jenisTransaksi').value;
         const asalAtauProyek = jenis === 'Barang Keluar'
             ? document.getElementById('namaProyek').value
@@ -344,116 +413,106 @@
         return true;
     }
 
-    // --- FUNGSI PARSING DATA EDIT KE FORM ATAS SECARA DINAMIS ---
+    // --- MODE EDIT: isi ulang form dari data-* attribute baris tabel (data DB asli, bukan parsing teks) ---
     function editBarisLog(btn) {
         const baris = btn.closest('tr');
-        
-        // 1. Ambil data teks asli dari kolom tabel riwayat
-        const namaMaterial = baris.cells[1].innerText.trim();
-        const jenisTransaksi = baris.cells[2].innerText.trim();
-        const stringSpesifikasi = baris.cells[3].innerText.trim();
-        const pelacakanLogistik = baris.cells[5].innerText.trim();
+        const d = baris.dataset;
 
-        // 2. Set Jenis Transaksi & Form Logistiknya
-        const selectJenis = document.getElementById('jenisTransaksi');
-        selectJenis.value = jenisTransaksi;
+        // 1. Alihkan form ke mode UPDATE
+        const form = document.getElementById('formBahanPokok');
+        form.action = `/material/pokok/${d.id}`;
+        document.getElementById('inputMethodPokok').value = 'PUT';
+        document.getElementById('btnBatalEdit').classList.remove('hidden');
+        document.getElementById('labelSubmitPokok').innerText = 'Perbarui Data Transaksi';
+
+        // 2. Jenis Transaksi & Form Logistiknya
+        document.getElementById('jenisTransaksi').value = d.jenisTransaksi;
         aturFormLogistik();
 
-        if (jenisTransaksi === 'Barang Keluar') {
-            document.getElementById('namaProyek').value = pelacakanLogistik;
+        document.getElementById('tglTransaksi').value = d.tanggal;
+        document.getElementById('namaProyek').value = d.namaProyek || '';
+
+        if (d.jenisTransaksi === 'Barang Keluar') {
+            document.getElementById('namaProduk').value = d.namaProdukJadi || '';
+            document.getElementById('qtyProduksi').value = d.qtyProduksi || 1;
         } else {
-            document.getElementById('asalBarang').value = pelacakanLogistik;
+            document.getElementById('asalBarang').value = d.asalSupplier || '';
         }
 
-        // 3. Temukan atau Injeksi Otomatis Item Barang di Dropdown
-        const selectItem = document.getElementById('itemBarang');
-        let opsiDitemukan = false;
-
-        selectItem.disabled = false;
-
-        // Cari apakah item sudah ada di dalam dropdown saat ini (yang lolos filter sub-kategori)
-        for (let i = 0; i < selectItem.options.length; i++) {
-            if (selectItem.options[i].text.trim() === namaMaterial) {
-                selectItem.selectedIndex = i;
-                opsiDitemukan = true;
+        // 3. Pilih ulang Sub-Kategori & Item Barang lewat ID asli (bukan teks/nama)
+        const catSelect = document.getElementById('category_id');
+        for (let i = 0; i < catSelect.options.length; i++) {
+            if (catSelect.options[i].text.trim() === d.categoryId) {
+                catSelect.selectedIndex = i;
                 break;
             }
         }
+        updateItemDropdown();
 
-        // Solusi Utama: Jika item disembunyikan oleh filter sub-kategori, suntik opsinya secara runtime!
-        if (!opsiDitemukan) {
-            let tipeKalkulasiDugaan = 'volume_kayu'; 
-            if (stringSpesifikasi.includes('Merek:') && stringSpesifikasi.includes('Tebal:')) {
-                tipeKalkulasiDugaan = 'lembar_board';
-            } else if (stringSpesifikasi.includes('Merek:') && stringSpesifikasi.includes('Kode:')) {
-                tipeKalkulasiDugaan = 'lembar_hpl';
-            } else if (stringSpesifikasi.includes('Jenis:') || baris.cells[4].innerText.includes('M2')) {
-                tipeKalkulasiDugaan = 'luas_veneer';
-            }
-
+        const itemSelect = document.getElementById('itemBarang');
+        itemSelect.value = d.materialId;
+        // Kalau item tidak ketemu di dropdown (tersaring sub-kategori), suntik runtime
+        if (itemSelect.value !== d.materialId) {
             const opsiBaru = document.createElement('option');
-            opsiBaru.value = "opsi_edit_dinamis"; 
-            opsiBaru.text = namaMaterial;
-            opsiBaru.setAttribute('data-nama', namaMaterial);
-            opsiBaru.setAttribute('data-tipe', tipeKalkulasiDugaan);
-            
-            selectItem.add(opsiBaru);
-            selectItem.value = "opsi_edit_dinamis";
+            opsiBaru.value = d.materialId;
+            opsiBaru.text = baris.cells[1].innerText.trim();
+            opsiBaru.setAttribute('data-tipe', d.tipeKalkulasi);
+            itemSelect.add(opsiBaru);
+            itemSelect.value = d.materialId;
         }
 
-        // Render bidang form parameter fisik spesifikasi
         renderSpesifikasiForm();
 
-        // 4. Proses Ekstraksi String Spesifikasi ke Input Field Parameter Fisik masing-masing
-        if (stringSpesifikasi.includes('Grade:')) {
-            const parts = stringSpesifikasi.split('|');
-            const grade = parts[0].replace('Grade:', '').trim();
-            const lokasiPart = parts[1].split('(')[0].replace('Lokasi:', '').trim();
-            const qtyMatch = parts[1].match(/\d+/);
-            const qty = qtyMatch ? qtyMatch[0] : 1;
-
-            if(document.getElementById('k_grade')) document.getElementById('k_grade').value = grade;
-            if(document.getElementById('k_gudang')) document.getElementById('k_gudang').value = lokasiPart;
-            if(document.getElementById('k_qty')) document.getElementById('k_qty').value = qty;
-            if(typeof hitungKubikasi === "function") hitungKubikasi();
-        } 
-        else if (stringSpesifikasi.includes('Merek:') && stringSpesifikasi.includes('Tebal:')) {
-            const parts = stringSpesifikasi.split('|');
-            const merk = parts[0].replace('Merek:', '').trim();
-            const tebal = parts[1].replace('Tebal:', '').replace('mm', '').trim();
-            const qty = parseFloat(baris.cells[4].innerText) || 1;
-
-            if(document.getElementById('b_merk')) document.getElementById('b_merk').value = merk;
-            if(document.getElementById('b_tebal')) document.getElementById('b_tebal').value = tebal;
-            if(document.getElementById('b_qty')) document.getElementById('b_qty').value = qty;
-        } 
-        else if (stringSpesifikasi.includes('Merek:') && stringSpesifikasi.includes('Kode:')) {
-            const parts = stringSpesifikasi.split('|');
-            const merk = parts[0].replace('Merek:', '').trim();
-            const kode = parts[1].replace('Kode:', '').trim();
-            const qty = parseFloat(baris.cells[4].innerText) || 1;
-
-            if(document.getElementById('h_merk')) document.getElementById('h_merk').value = merk;
-            if(document.getElementById('h_kode')) document.getElementById('h_kode').value = kode;
-            if(document.getElementById('h_qty')) document.getElementById('h_qty').value = qty;
+        // 4. Isi ulang field parameter fisik dari spesifikasi (best-effort, hanya untuk kenyamanan edit)
+        const spek = d.spesifikasi || '';
+        if (d.tipeKalkulasi === 'volume_kayu') {
+            const gradeMatch = spek.match(/Grade:\s*([^|]+)/);
+            const lokasiMatch = spek.match(/Lokasi:\s*([^|]+)/);
+            if (gradeMatch && document.getElementById('k_grade')) document.getElementById('k_grade').value = gradeMatch[1].trim();
+            if (lokasiMatch && document.getElementById('k_gudang')) document.getElementById('k_gudang').value = lokasiMatch[1].trim();
+            if (document.getElementById('k_qty')) document.getElementById('k_qty').value = d.qtyFisik || 1;
+            if (typeof hitungKubikasi === 'function') hitungKubikasi();
         }
-        else if (stringSpesifikasi.includes('Jenis:')) {
-            const parts = stringSpesifikasi.split('|');
-            const jenis = parts[0].replace('Jenis:', '').trim();
-            const bendel = parts[1].replace('No. Bendel:', '').trim();
-            const tebal = parts[2].replace('Tebal:', '').replace('mm', '').trim();
-            const qtyMatch = parts[3].match(/\d+/);
-            const qty = qtyMatch ? qtyMatch[0] : 1;
-
-            if(document.getElementById('v_jenis')) document.getElementById('v_jenis').value = jenis;
-            if(document.getElementById('v_bendel')) document.getElementById('v_bendel').value = bendel;
-            if(document.getElementById('v_tebal')) document.getElementById('v_tebal').value = tebal;
-            if(document.getElementById('v_qty')) document.getElementById('v_qty').value = qty;
-            if(typeof hitungLuasVeneer === "function") hitungLuasVeneer();
+        else if (d.tipeKalkulasi === 'lembar_board') {
+            const merkMatch = spek.match(/Merek:\s*([^|]+)/);
+            const tebalMatch = spek.match(/Tebal:\s*([\d.]+)/);
+            if (merkMatch && document.getElementById('b_merk')) document.getElementById('b_merk').value = merkMatch[1].trim();
+            if (tebalMatch && document.getElementById('b_tebal')) document.getElementById('b_tebal').value = tebalMatch[1].trim();
+            if (document.getElementById('b_qty')) document.getElementById('b_qty').value = d.qtyFisik || d.kuantitas || 1;
+        }
+        else if (d.tipeKalkulasi === 'lembar_hpl') {
+            const merkMatch = spek.match(/Merek:\s*([^|]+)/);
+            const kodeMatch = spek.match(/Kode:\s*([^|]+)/);
+            if (merkMatch && document.getElementById('h_merk')) document.getElementById('h_merk').value = merkMatch[1].trim();
+            if (kodeMatch && document.getElementById('h_kode')) document.getElementById('h_kode').value = kodeMatch[1].trim();
+            if (document.getElementById('h_qty')) document.getElementById('h_qty').value = d.qtyFisik || d.kuantitas || 1;
+        }
+        else if (d.tipeKalkulasi === 'luas_veneer') {
+            const jenisMatch = spek.match(/Jenis:\s*([^|]+)/);
+            const bendelMatch = spek.match(/No\. Bendel:\s*([^|]+)/);
+            const tebalMatch = spek.match(/Tebal:\s*([\d.]+)/);
+            if (jenisMatch && document.getElementById('v_jenis')) document.getElementById('v_jenis').value = jenisMatch[1].trim();
+            if (bendelMatch && document.getElementById('v_bendel')) document.getElementById('v_bendel').value = bendelMatch[1].trim();
+            if (tebalMatch && document.getElementById('v_tebal')) document.getElementById('v_tebal').value = tebalMatch[1].trim();
+            if (document.getElementById('v_qty')) document.getElementById('v_qty').value = d.qtyFisik || 1;
+            if (typeof hitungLuasVeneer === 'function') hitungLuasVeneer();
         }
 
-        // Scroll otomatis ke atas agar user nyaman langsung mengedit form
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function batalkanEdit() {
+        const form = document.getElementById('formBahanPokok');
+        form.action = "{{ route('material.pokok.store') }}";
+        document.getElementById('inputMethodPokok').value = 'POST';
+        document.getElementById('btnBatalEdit').classList.add('hidden');
+        document.getElementById('labelSubmitPokok').innerText = 'Amankan Data Stok Pokok';
+
+        form.reset();
+        document.getElementById('itemBarang').disabled = true;
+        document.getElementById('wrapperSpesifikasi').classList.add('hidden');
+        document.getElementById('tglTransaksi').valueAsDate = new Date();
+        aturFormLogistik();
     }
 </script>
 

@@ -47,7 +47,7 @@ Route::middleware('auth')->group(function () {
 
     // --- SUPPLIER ---
     Route::get('/material/supplier', [SupplierController::class, 'index'])->name('material.supplier');
-
+    
     // --- MASTER DATA KATEGORI (Fitur Edit & Update Telah Dihapus Sesuai Permintaan Industri) ---
     Route::get('/material/category', [CategoryController::class, 'index'])->name('material.category');
     Route::get('/material/category/create', [CategoryController::class, 'create'])->name('material.category.create');
