@@ -7,21 +7,18 @@ use App\Models\MasterMaterialPembantu;
 use App\Models\Category;
 use App\Models\MutasiBarang;
 
+
 class MaterialPembantuController extends Controller
 {
     public function index()
     {
         $items = MasterMaterialPembantu::all();
 
-        // PENTING: pastikan model Category punya relasi materialPembantus()
-        // yang mengarah ke MasterMaterialPembantu (bukan ke Material/bahan pokok).
-        // Jika relasi 'materials' di Category masih mengarah ke tabel `materials`
-        // (bahan pokok), dropdown Sub-Kategori -> Item di view akan kosong/salah.
         $categories = Category::with('materialPembantus')
             ->where('kelompok_material', 'Material Pembantu')
             ->get();
 
-        $mutasiks = MutasiBarang::latest()->get();
+       $mutasiks = MasterMaterialPembantu::all();
 
         return view('admin.material.pembantu', compact('categories', 'mutasiks', 'items'));
     }
@@ -40,7 +37,9 @@ class MaterialPembantuController extends Controller
             'asal_atau_proyek' => 'nullable|string|max:255',
         ]);
 
-        $material = MasterMaterialPembantu::findOrFail($request->item_material);
+        $mutasiks = MutasiBarang::with('materialPembantu')
+            ->orderBy('tanggal', 'desc')
+            ->get();;
 
         // 2. Simpan ke log transaksi
         MutasiBarang::create([
@@ -69,4 +68,12 @@ class MaterialPembantuController extends Controller
 
         return redirect()->back()->with('success', 'Data mutasi bahan pembantu berhasil disimpan!');
     }
+
+    public function destroy($id)
+{
+    $log = MasterMaterialPembantu::findOrFail($id);
+    $log->delete();
+
+    return redirect()->back()->with('success', 'Data transaksi material pembantu berhasil dihapus!');
+}
 }

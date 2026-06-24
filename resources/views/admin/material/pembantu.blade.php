@@ -127,7 +127,7 @@
                     </tr>
                 </thead>
                 <tbody id="badanTabelLog" class="divide-y divide-slate-100 bg-white">
-                    @forelse($mutasis as $mutasi)
+                    @forelse($mutasiks as $mutasi)
                         @php
                             $badgeWarna = "bg-slate-100 text-slate-700 border-slate-200";
                             if ($mutasi->jenis_transaksi === 'Barang Masuk') $badgeWarna = "bg-emerald-50 text-emerald-700 border-emerald-200/80";

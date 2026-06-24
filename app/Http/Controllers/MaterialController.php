@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Material;
 use App\Models\Category;
+use App\Models\Mutasik;
 use App\Models\MutasiBarang;
+use App\Models\MutasiSistem;
+
 
 class MaterialController extends Controller
 {
@@ -65,4 +68,15 @@ class MaterialController extends Controller
 
         return redirect()->back()->with('success', 'Data transaksi stok pokok berhasil diamankan!');
     }
+
+    public function destroy($id)
+{
+   $log = MutasiBarang::findOrFail($id);
+
+    // 2. Hapus datanya dari database
+    $log->delete();
+
+    // 3. Kembalikan ke halaman sebelumnya dengan pesan sukses
+    return redirect()->back()->with('success', 'Data transaksi material pokok berhasil dihapus dari jurnal!');
+}
 }

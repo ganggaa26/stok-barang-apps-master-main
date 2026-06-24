@@ -129,7 +129,6 @@
                             <td class="p-3.5 text-xs text-slate-500">{{ $log->asal_atau_proyek }}</td>
                             <td class="p-3.5 text-center whitespace-nowrap">
                                 <div class="flex items-center justify-center space-x-1.5">
-                                    {{-- Aksi Edit & Hapus Database / State --}}
                                     <button type="button" onclick="editBarisLog(this)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded transition-colors text-xs font-medium flex items-center gap-0.5 shadow-sm">
                                         ✏️ <span>Edit</span>
                                     </button>
@@ -326,10 +325,6 @@
             satuanInput = "M2";
             spesifikasi = `Jenis: ${jenis} | No. Bendel: ${bendel} | Tebal: ${tebal}mm | Jumlah: ${jumlahLembar} Lembar`;
         }
-        else {
-            alert('Item ini belum punya tipe_kalkulasi yang dikenali sistem.');
-            return false;
-        }
 
         if (!kuantitas || kuantitas <= 0) {
             alert('Kuantitas harus diisi dan lebih dari 0!');
@@ -349,9 +344,117 @@
         return true;
     }
 
+    // --- FUNGSI PARSING DATA EDIT KE FORM ATAS SECARA DINAMIS ---
     function editBarisLog(btn) {
-        alert('Fitur edit dialihkan ke pengeditan data master via database.');
-        // Jika ingin mengembalikan data ke form input atas untuk re-submit, 
-        // logika parsing string spesifikasi ke masing-masing input field bisa ditaruh di sini.
+        const baris = btn.closest('tr');
+        
+        // 1. Ambil data teks asli dari kolom tabel riwayat
+        const namaMaterial = baris.cells[1].innerText.trim();
+        const jenisTransaksi = baris.cells[2].innerText.trim();
+        const stringSpesifikasi = baris.cells[3].innerText.trim();
+        const pelacakanLogistik = baris.cells[5].innerText.trim();
+
+        // 2. Set Jenis Transaksi & Form Logistiknya
+        const selectJenis = document.getElementById('jenisTransaksi');
+        selectJenis.value = jenisTransaksi;
+        aturFormLogistik();
+
+        if (jenisTransaksi === 'Barang Keluar') {
+            document.getElementById('namaProyek').value = pelacakanLogistik;
+        } else {
+            document.getElementById('asalBarang').value = pelacakanLogistik;
+        }
+
+        // 3. Temukan atau Injeksi Otomatis Item Barang di Dropdown
+        const selectItem = document.getElementById('itemBarang');
+        let opsiDitemukan = false;
+
+        selectItem.disabled = false;
+
+        // Cari apakah item sudah ada di dalam dropdown saat ini (yang lolos filter sub-kategori)
+        for (let i = 0; i < selectItem.options.length; i++) {
+            if (selectItem.options[i].text.trim() === namaMaterial) {
+                selectItem.selectedIndex = i;
+                opsiDitemukan = true;
+                break;
+            }
+        }
+
+        // Solusi Utama: Jika item disembunyikan oleh filter sub-kategori, suntik opsinya secara runtime!
+        if (!opsiDitemukan) {
+            let tipeKalkulasiDugaan = 'volume_kayu'; 
+            if (stringSpesifikasi.includes('Merek:') && stringSpesifikasi.includes('Tebal:')) {
+                tipeKalkulasiDugaan = 'lembar_board';
+            } else if (stringSpesifikasi.includes('Merek:') && stringSpesifikasi.includes('Kode:')) {
+                tipeKalkulasiDugaan = 'lembar_hpl';
+            } else if (stringSpesifikasi.includes('Jenis:') || baris.cells[4].innerText.includes('M2')) {
+                tipeKalkulasiDugaan = 'luas_veneer';
+            }
+
+            const opsiBaru = document.createElement('option');
+            opsiBaru.value = "opsi_edit_dinamis"; 
+            opsiBaru.text = namaMaterial;
+            opsiBaru.setAttribute('data-nama', namaMaterial);
+            opsiBaru.setAttribute('data-tipe', tipeKalkulasiDugaan);
+            
+            selectItem.add(opsiBaru);
+            selectItem.value = "opsi_edit_dinamis";
+        }
+
+        // Render bidang form parameter fisik spesifikasi
+        renderSpesifikasiForm();
+
+        // 4. Proses Ekstraksi String Spesifikasi ke Input Field Parameter Fisik masing-masing
+        if (stringSpesifikasi.includes('Grade:')) {
+            const parts = stringSpesifikasi.split('|');
+            const grade = parts[0].replace('Grade:', '').trim();
+            const lokasiPart = parts[1].split('(')[0].replace('Lokasi:', '').trim();
+            const qtyMatch = parts[1].match(/\d+/);
+            const qty = qtyMatch ? qtyMatch[0] : 1;
+
+            if(document.getElementById('k_grade')) document.getElementById('k_grade').value = grade;
+            if(document.getElementById('k_gudang')) document.getElementById('k_gudang').value = lokasiPart;
+            if(document.getElementById('k_qty')) document.getElementById('k_qty').value = qty;
+            if(typeof hitungKubikasi === "function") hitungKubikasi();
+        } 
+        else if (stringSpesifikasi.includes('Merek:') && stringSpesifikasi.includes('Tebal:')) {
+            const parts = stringSpesifikasi.split('|');
+            const merk = parts[0].replace('Merek:', '').trim();
+            const tebal = parts[1].replace('Tebal:', '').replace('mm', '').trim();
+            const qty = parseFloat(baris.cells[4].innerText) || 1;
+
+            if(document.getElementById('b_merk')) document.getElementById('b_merk').value = merk;
+            if(document.getElementById('b_tebal')) document.getElementById('b_tebal').value = tebal;
+            if(document.getElementById('b_qty')) document.getElementById('b_qty').value = qty;
+        } 
+        else if (stringSpesifikasi.includes('Merek:') && stringSpesifikasi.includes('Kode:')) {
+            const parts = stringSpesifikasi.split('|');
+            const merk = parts[0].replace('Merek:', '').trim();
+            const kode = parts[1].replace('Kode:', '').trim();
+            const qty = parseFloat(baris.cells[4].innerText) || 1;
+
+            if(document.getElementById('h_merk')) document.getElementById('h_merk').value = merk;
+            if(document.getElementById('h_kode')) document.getElementById('h_kode').value = kode;
+            if(document.getElementById('h_qty')) document.getElementById('h_qty').value = qty;
+        }
+        else if (stringSpesifikasi.includes('Jenis:')) {
+            const parts = stringSpesifikasi.split('|');
+            const jenis = parts[0].replace('Jenis:', '').trim();
+            const bendel = parts[1].replace('No. Bendel:', '').trim();
+            const tebal = parts[2].replace('Tebal:', '').replace('mm', '').trim();
+            const qtyMatch = parts[3].match(/\d+/);
+            const qty = qtyMatch ? qtyMatch[0] : 1;
+
+            if(document.getElementById('v_jenis')) document.getElementById('v_jenis').value = jenis;
+            if(document.getElementById('v_bendel')) document.getElementById('v_bendel').value = bendel;
+            if(document.getElementById('v_tebal')) document.getElementById('v_tebal').value = tebal;
+            if(document.getElementById('v_qty')) document.getElementById('v_qty').value = qty;
+            if(typeof hitungLuasVeneer === "function") hitungLuasVeneer();
+        }
+
+        // Scroll otomatis ke atas agar user nyaman langsung mengedit form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 </script>
+
+@endsection

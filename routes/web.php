@@ -31,10 +31,16 @@ Route::middleware('auth')->group(function () {
     // --- MATERIAL POKOK (Menggunakan MaterialController) ---
     Route::get('/material/pokok', [MaterialController::class, 'index'])->name('material.pokok');
     Route::post('/material/pokok/store', [MaterialController::class, 'storeMutasi'])->name('material.pokok.store');
+    Route::get('/material/pokok/{id}/edit', [MaterialController::class, 'edit'])->name('material.pokok.edit');
+    Route::put('/material/pokok/{id}', [MaterialController::class, 'update'])->name('material.pokok.update');
+    Route::delete('/material/pokok/{id}', [MaterialController::class, 'destroy'])->name('material.pokok.destroy');
     
     // --- MATERIAL PEMBANTU (Menggunakan MaterialPembantuController) ---
     Route::get('/material/pembantu', [MaterialPembantuController::class, 'index'])->name('material.pembantu');
     Route::post('/material/pembantu/store', [MaterialPembantuController::class, 'store'])->name('material.pembantu.store');
+    Route::get('/material/pembantu/{id}/edit', [MaterialPembantuController::class, 'edit'])->name('material.pembantu.edit');
+    Route::put('/material/pembantu/{id}', [MaterialPembantuController::class, 'update'])->name('material.pembantu.update');
+    Route::delete('/material/pembantu/{id}', [MaterialPembantuController::class, 'destroy'])->name('material.pembantu.destroy');
 
     // --- MUTASI / TRANSAKSI STOK ---
     Route::post('/material/mutasi', [MaterialController::class, 'storeMutasi'])->name('material.storeMutasi');
