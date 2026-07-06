@@ -12,11 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('mutasi_barangs', function (Blueprint $table) {
-                $table->string('merk')->nullable()->after('kategori_material');
-                $table->string('spesifikasi')->nullable()->after('merk');
-                $table->string('satuan_input')->nullable()->after('spesifikasi');
-                $table->string('asal_atau_proyek')->nullable()->after('satuan_input');
-       
+            // Amankan kolom 'nama_proyek' jika belum ada
+            if (!Schema::hasColumn('mutasi_barangs', 'nama_proyek')) {
+                $table->string('nama_proyek')->nullable()->after('asal_atau_proyek');
+            }
+            
+            // Amankan kolom 'spesifikasi_lokasi' jika belum ada
+            if (!Schema::hasColumn('mutasi_barangs', 'spesifikasi_lokasi')) {
+                $table->string('spesifikasi_lokasi')->nullable()->after('nama_proyek');
+            }
         });
     }
 
@@ -26,7 +30,13 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('mutasi_barangs', function (Blueprint $table) {
-              $table->dropColumn(['merk', 'spesifikasi', 'satuan_input', 'asal_atau_proyek']);
+            // Drop kolom hanya jika kolom tersebut eksis di database
+            if (Schema::hasColumn('mutasi_barangs', 'nama_proyek')) {
+                $table->dropColumn('nama_proyek');
+            }
+            if (Schema::hasColumn('mutasi_barangs', 'spesifikasi_lokasi')) {
+                $table->dropColumn('spesifikasi_lokasi');
+            }
         });
     }
 };

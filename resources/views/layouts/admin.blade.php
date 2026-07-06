@@ -6,12 +6,93 @@
     <title>PT Pelangi Kreasi Solusi | @yield('title', 'Sistem Material')</title>
 
     <link rel="stylesheet" href="{{ asset('dashui/assets/css/theme.css') }}">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.1/feather.min.css">
 
-    <style>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+
+   <style>
         body { font-family: 'Inter', sans-serif; background-color: #f5f7fb; }
         .navbar-brand { font-weight: 700; color: #624bff !important; }
+
+        .collapsing { transition: none !important; }
+        #navBahanBaku.collapse.show {
+            display: block !important;
+            height: auto !important;
+            visibility: visible !important;
+        }
+
+        /* ==========================================================================
+           🎨 PERBAIKAN TOTAL VISUAL TOM SELECT (ANTI-BERTUMPUK & PREMIUM)
+           ========================================================================== */
+        
+        /* Menyembunyikan select bawaan asli secara total agar tidak bertumpuk di belakang */
+        select.ts-hidden-accessible {
+            border: 0 !important;
+            clip: rect(0 0 0 0) !important;
+            clip-path: inset(50%) !important;
+            height: 1px !important;
+            overflow: hidden !important;
+            padding: 0 !important;
+            position: absolute !important;
+            width: 1px !important;
+            white-space: nowrap !important;
+        }
+
+        /* Kotak utama dropdown */
+        .ts-wrapper .ts-control {
+            border-radius: 0.375rem !important;
+            padding: 0.6rem 1rem !important;
+            border: 1px solid #cbd5e1 !important;
+            background-color: #ffffff !important;
+            color: #334155 !important;
+            font-size: 0.9rem !important;
+            display: flex !important;
+            align-items: center !important;
+            min-height: 42px !important;
+            box-shadow: none !important;
+        }
+
+        /* Menghilangkan input bawaan yang mengacaukan teks pilihan */
+        .ts-wrapper .ts-control input {
+            display: none !important;
+        }
+
+        /* Sisi fokus saat diklik */
+        .ts-wrapper.focus .ts-control {
+            border-color: #624bff !important; /* Menyesuaikan tema DashUI kamu */
+            box-shadow: 0 0 0 3px rgba(98, 75, 255, 0.15) !important;
+        }
+
+        /* PANEL FLOATING CARD (Wajib solid background putih agar tidak tembus pandang) */
+        .ts-dropdown {
+            background-color: #ffffff !important;
+            border-radius: 0.5rem !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
+            margin-top: 4px !important;
+            z-index: 1050 !important; /* Memastikan melayang di atas input lainnya */
+        }
+
+        /* GARIS PEMBATAS & GAYA HURUF DI SETIAP BARIS DATA */
+        .ts-dropdown .option {
+            padding: 0.75rem 1rem !important;
+            border-bottom: 1px solid #f1f5f9 !important; /* Garis pembatas pesananmu */
+            color: #475569 !important;
+            font-size: 0.875rem !important;
+            cursor: pointer;
+            background-color: #ffffff !important;
+        }
+
+        .ts-dropdown .option:last-child {
+            border-bottom: none !important;
+        }
+
+        /* EFEK HOVER KETIKA KURSOR DIGESER */
+        .ts-dropdown .option:hover, .ts-dropdown .active {
+            background-color: #f8fafc !important; /* Abu-abu terang sangat lembut */
+            color: #624bff !important; /* Teks berubah ke warna tema utama */
+            font-weight: 500 !important;
+        }
     </style>
 </head>
 
@@ -38,7 +119,9 @@
                                 </a>
                                 
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdownProfile" style="min-width: 200px;">
-                                    <img alt="avatar" src="{{ asset('dashui/assets/images/avatar/avatar-21.jpg') }}" class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;">
+                                    <li class="p-3 text-center">
+                                        <img alt="avatar" src="{{ asset('dashui/assets/images/avatar/avatar-21.jpg') }}" class="rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover;">
+                                    </li>
                                     <li class="dropdown-header border-bottom pb-2 mb-2">
                                         <h6 class="mb-0 fw-bold text-dark">{{ Auth::user()->name }}</h6>
                                         <small class="text-muted">{{ Auth::user()->email }}</small>
@@ -65,6 +148,9 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ asset('dashui/assets/js/theme.min.js') }}"></script>
+    <script src="{{ asset('dashui/assets/js/sidebarMenu.js') }}"></script>
+    <script src="{{ asset('dashui/assets/js/main.js') }}"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 </body>
 </html>

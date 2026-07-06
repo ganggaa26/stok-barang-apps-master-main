@@ -2,23 +2,26 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Material extends Model
 {
     use HasFactory;
 
-    protected $table = 'materials';
+    protected $table = 'materials'; // Memastikan mengarah ke tabel materials
 
-    // Pastikan 'jenis_material' ADA di dalam array ini
-    protected $fillable = [
-        'kode_material',
-        'nama_material',
-        'jenis_material', 
-        'tipe_kalkulasi',
-        'satuan',
-        'stok_sekarang',
-        'stok_minimum'
-    ];
+    protected $guarded = []; // Atau masukkan fillable-mu jika ada
+
+    // Wajib Tambahkan Fungsi Ini di Sini!
+   public function kategori()
+{
+    // Menghubungkan kolom kategori_material (atau category_id) ke id tabel categories
+    return $this->belongsTo(Category::class, 'kategori_material', 'id'); 
+}
+
+    public function mutasis()
+    {
+        return $this->hasMany(MutasiBarang::class, 'material_id');
+    }
 }

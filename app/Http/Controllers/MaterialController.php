@@ -3,202 +3,163 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Material;
+use App\Models\Material;   
 use App\Models\Category;
-use App\Models\Mutasik;
 use App\Models\MutasiBarang;
-use App\Models\MutasiSistem;
-use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Str;
+use DB;
 
 class MaterialController extends Controller
 {
     public function index()
     {
-        // 1. Ambil kategori khusus kelompok Material Pokok
-        $categories = Category::where('kelompok_material', 'Material Pokok')->get();
+        // 1. Ambil data kategori untuk dropdown Sub-Kategori
+        $categories = Category::where('kelompok_material', 'LIKE', '%pokok%')->get();
 
-        // 2. Ambil data dari tabel pokok (materials) lewat kolom jenis_material
-        $materials = Material::whereIn('jenis_material', $categories->pluck('nama_Kategori'))->get();
+        $materials = Material::with('kategori')->get()->map(function ($item) {
+            // Otomatis pasang tipe_kalkulasi dari relasi kategori jika ada
+            $item->tipe_kalkulasi = $item->kategori ? $item->kategori->tipe_kalkulasi : 'volume_kayu';
+            return $item;
+        });
 
-        // 3. Ambil riwayat transaksi Bahan Pokok saja.
-        // Karena mutasi_barangs dipakai bersama Pokok & Pembantu, kita filter
-        // berdasarkan material_id yang ada di tabel materials (bahan pokok).
-        $idMaterialPokok = $materials->pluck('id');
-        $mutasiks = MutasiBarang::whereIn('material_id', $idMaterialPokok)
-            ->latest()
-            ->get();
+        // 3. Ambil data mutasi/jurnal transaksi untuk tabel riwayat di bawah
+        $mutasiks = MutasiBarang::latest()->get(); 
 
+        // 4. Kirim ketiganya ke view
         return view('admin.material.pokok', compact('categories', 'materials', 'mutasiks'));
     }
 
-  public function storeMutasi(Request $request)
+  public function store(Request $request)
 {
+    // 1. Validasi Input Form dari JS
     $request->validate([
-        'material_id'      => 'required|exists:materials,id',
-        'jenis_transaksi'  => 'required|string',
-        'tanggal'          => 'required|date',
-        'kuantitas'        => 'required|numeric',
-
-        'nama_proyek'      => 'nullable|string|max:255',
-        'asal_supplier'    => 'nullable|string|max:255',
-        'nama_produk_jadi' => 'nullable|string|max:255',
-        'qty_produksi'     => 'nullable|numeric',
-
-        'qty_fisik'        => 'nullable|numeric',
-        'satuan_fisik'     => 'nullable|string|max:255',
-
-        'spesifikasi'      => 'nullable|string|max:255',
-        'satuan_input'     => 'nullable|string|max:255',
-        'asal_atau_proyek' => 'nullable|string|max:255',
+        'jenis_transaksi'   => 'required|string',
+        'tanggal_transaksi' => 'nullable|date', 
+        'material_id'       => 'required', 
+        'kuantitas'         => 'required|numeric',
+        'qty_fisik'         => 'required|numeric',
+        'spesifikasi'       => 'nullable|string',
     ]);
 
+    // 2. Pengaman Tanggal Transaksi Otomatis
+    $tanggalRaw = $request->input('tanggal_transaksi');
+    if (empty($tanggalRaw) || str_starts_with($tanggalRaw, '00') || str_starts_with($tanggalRaw, '02')) {
+        $tanggalRaw = date('Y-m-d'); 
+    }
+
+    // 3. Ambil data master material asal
     $material = Material::findOrFail($request->material_id);
-
-    MutasiBarang::create([
-        'material_id'       => $material->id,
-        'kategori_material' => $material->jenis_material,
-        'jenis_transaksi'   => $request->jenis_transaksi,
-        'kuantitas'         => $request->kuantitas,
-        'tanggal'           => $request->tanggal,
-
-        'spesifikasi'       => $request->spesifikasi,
-        'satuan_input'      => $request->satuan_input,
-
-        'asal_atau_proyek'  => $request->asal_atau_proyek,
-
-        'nama_proyek'       => $request->nama_proyek,
-        'asal_supplier'     => $request->asal_supplier,
-        'nama_produk_jadi'  => $request->nama_produk_jadi,
-        'qty_produksi'      => $request->qty_produksi,
-
-        'qty_fisik'         => $request->qty_fisik,
-        'satuan_fisik'      => $request->satuan_fisik,
-
-        'keterangan'        => $request->spesifikasi,
-    ]);
+    $textSupplier = trim($request->input('asal_barang') ?? $request->input('asalBarang') ?? $request->input('asal_supplier') ?? '');
+    $textProyek = trim($request->input('nama_proyek') ?? $request->input('namaProyek') ?? '');
 
     if ($request->jenis_transaksi === 'Barang Keluar') {
-        $material->decrement('stok_sekarang', $request->kuantitas);
+        $asalSupplierFinal = null;
+        $namaProyekFinal = ($textProyek !== '') ? $textProyek : 'General';
     } else {
-        $material->increment('stok_sekarang', $request->kuantitas);
+        // Jika Barang Masuk atau Stok Awal, proyek WAJIB NULL (jadi strip di view)
+        $namaProyekFinal = null; 
+
+        if ($textSupplier !== '') {
+            $asalSupplierFinal = $textSupplier;
+        } else {
+            // JIKA MAU STOK AWAL: Namanya disesuaikan jadi "Restock Stok Awal"
+            if ($request->jenis_transaksi === 'Stok Awal' || $request->jenis_transaksi === 'Stok Awal Gudang') {
+                $asalSupplierFinal = 'Restock Stok Awal';
+            } else {
+                $asalSupplierFinal = 'Restock Umum';
+            }
+        }
     }
 
-    return redirect()->back()->with(
-        'success',
-        'Data transaksi stok pokok berhasil diamankan!'
-    );
+    // 5. Simpan data ke database
+    MutasiBarang::create([
+        'material_id'        => $material->id,
+        'kategori_material'  => $material->jenis_material, 
+        'jenis_transaksi'    => $request->jenis_transaksi,
+        'tangal'            => $tanggalRaw, // Menyesuaikan nama kolom 'tanggal' di DB kamu
+        'tanggal'            => $tanggalRaw,
+        
+        'tebal'              => $request->input('tebal'),
+        'lebar'              => $request->input('lebar'),
+        'panjang'            => $request->input('panjang'),
+        'qty_fisik'          => $request->qty_fisik,   
+        'kuantitas'          => $request->kuantitas,   
+        'spesifikasi_lokasi' => $request->spesifikasi, 
+        
+        'asal_supplier'      => $asalSupplierFinal,
+        'nama_proyek'        => $namaProyekFinal,
+    ]);
+
+    // 6. Logika Update Stok Riil Dinamis pada Master Material Pokok
+    if ($request->jenis_transaksi === 'Barang Masuk' || $request->jenis_transaksi === 'Stok Awal' || $request->jenis_transaksi === 'Stok Awal Gudang') {
+        $material->increment('stok_sekarang', $request->kuantitas);
+    } else if ($request->jenis_transaksi === 'Barang Keluar') {
+        $material->decrement('stok_sekarang', $request->kuantitas);
+    }
+
+    return redirect()->route('material.pokok')->with('success', 'Jurnal Transaksi Material Pokok Berhasil Disimpan!');
+}
+    public function update(Request $request, $id)
+{
+    $mutasi = MutasiBarang::findOrFail($id);
+    $material = Material::findOrFail($mutasi->material_id);
+    $textSupplier = trim($request->input('asal_barang') ?? $request->input('asalBarang') ?? $request->input('asal_supplier') ?? '');
+    $textProyek = trim($request->input('nama_proyek') ?? $request->input('namaProyek') ?? '');
+
+    if ($request->jenis_transaksi === 'Barang Keluar') {
+        $asalSupplierFinal = null;
+        $namaProyekFinal = ($textProyek !== '') ? $textProyek : 'General';
+    } else {
+        $namaProyekFinal = null;
+        
+        if ($textSupplier !== '') {
+            $asalSupplierFinal = $textSupplier;
+        } else {
+            // Amankan data lama yang sudah ada di database agar tidak kembali jadi strip
+            if (!empty($mutasi->asal_supplier)) {
+                $asalSupplierFinal = $mutasi->asal_supplier;
+            } else {
+                if ($request->jenis_transaksi === 'Stok Awal' || $request->jenis_transaksi === 'Stok Awal Gudang') {
+                    $asalSupplierFinal = 'Restock Stok Awal';
+                } else {
+                    $asalSupplierFinal = 'Restock Umum';
+                }
+            }
+        }
+    }
+
+    // 2. Update ke database
+    $mutasi->update([
+        'jenis_transaksi'    => $request->jenis_transaksi,
+        'tanggal'            => $request->input('tanggal') ?? $mutasi->tanggal,
+        'tebal'              => $request->input('tebal') ?? $mutasi->tebal,
+        'lebar'              => $request->input('lebar') ?? $mutasi->lebar,
+        'panjang'            => $request->input('panjang') ?? $mutasi->panjang,
+        'qty_fisik'          => $request->input('qty_fisik') ?? $mutasi->qty_fisik,
+        'kuantitas'          => $request->input('kuantitas') ?? $mutasi->kuantitas,
+        'spesifikasi_lokasi' => $request->input('spesifikasi_lokasi') ?? $mutasi->spesifikasi_lokasi,
+        
+        'asal_supplier'      => $asalSupplierFinal,
+        'nama_proyek'        => $namaProyekFinal,
+    ]);
+
+    return redirect()->route('material.pokok')->with('success', 'Data Transaksi Berhasil Diperbarui!');
 }
 
-    public function edit($id)
-    {
-        return redirect()
-            ->route('material.pokok')
-            ->with('success', 'Silakan gunakan tombol Edit pada tabel transaksi material pokok.');
-    }
-
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'material_id'      => 'required|exists:materials,id',
-            'jenis_transaksi'  => 'required|string',
-            'tanggal'          => 'required|date',
-            'kuantitas'        => 'required|numeric',
-
-            'nama_proyek'      => 'nullable|string|max:255',
-            'asal_supplier'    => 'nullable|string|max:255',
-            'nama_produk_jadi' => 'nullable|string|max:255',
-            'qty_produksi'     => 'nullable|numeric',
-
-            'qty_fisik'        => 'nullable|numeric',
-            'satuan_fisik'     => 'nullable|string|max:255',
-
-            'spesifikasi'      => 'nullable|string|max:255',
-            'satuan_input'     => 'nullable|string|max:255',
-            'asal_atau_proyek' => 'nullable|string|max:255',
-        ]);
-
-        DB::transaction(function () use ($request, $id) {
-            $log = MutasiBarang::findOrFail($id);
-            $materialLama = Material::findOrFail($log->material_id);
-            $materialBaru = Material::findOrFail($request->material_id);
-
-            $this->balikkanStokMaterial($materialLama, $log->jenis_transaksi, $log->kuantitas);
-
-            $log->update([
-                'material_id'       => $materialBaru->id,
-                'kategori_material' => $materialBaru->jenis_material,
-                'jenis_transaksi'   => $request->jenis_transaksi,
-                'kuantitas'         => $request->kuantitas,
-                'tanggal'           => $request->tanggal,
-
-                'spesifikasi'       => $request->spesifikasi,
-                'satuan_input'      => $request->satuan_input,
-                'asal_atau_proyek'  => $request->asal_atau_proyek,
-
-                'nama_proyek'       => $request->nama_proyek,
-                'asal_supplier'     => $request->asal_supplier,
-                'nama_produk_jadi'  => $request->nama_produk_jadi,
-                'qty_produksi'      => $request->qty_produksi,
-
-                'qty_fisik'         => $request->qty_fisik,
-                'satuan_fisik'      => $request->satuan_fisik,
-
-                'keterangan'        => $request->spesifikasi,
-            ]);
-
-            $this->terapkanStokMaterial($materialBaru, $request->jenis_transaksi, $request->kuantitas);
-        });
-
-        return redirect()->route('material.pokok')->with(
-            'success',
-            'Data transaksi stok pokok berhasil diperbarui!'
-        );
-    }
-
     public function destroy($id)
-    {
-        DB::transaction(function () use ($id) {
-            $log = MutasiBarang::findOrFail($id);
-            $material = Material::findOrFail($log->material_id);
+        {
+            $mutasi = MutasiBarang::findOrFail($id);
+            $material = Material::findOrFail($mutasi->material_id);
 
-            $this->balikkanStokMaterial($material, $log->jenis_transaksi, $log->kuantitas);
-            $log->delete();
-        });
+            // Menyesuaikan ulang stok master agar tidak pincang setelah log dihapus
+            if ($mutasi->jenis_transaksi === 'Barang Masuk' || $mutasi->jenis_transaksi === 'Stok Awal' || $mutasi->jenis_transaksi === 'Stok Awal Gudang') {
+                $material->decrement('stok_sekarang', $mutasi->kuantitas);
+            } else if ($mutasi->jenis_transaksi === 'Barang Keluar') {
+                $material->increment('stok_sekarang', $mutasi->kuantitas);
+            }
 
-        return redirect()->back()->with('success', 'Data transaksi material pokok berhasil dihapus dari jurnal!');
-    }
+            $mutasi->delete();
 
-    private function terapkanStokMaterial(Material $material, string $jenisTransaksi, $kuantitas): void
-    {
-        if ($jenisTransaksi === 'Barang Keluar') {
-            $material->decrement('stok_sekarang', $kuantitas);
-            return;
+            return redirect()->route('material.pokok')->with('success', 'Riwayat transaksi berhasil dihapus!');
         }
-
-        $material->increment('stok_sekarang', $kuantitas);
-    }
-
-    private function balikkanStokMaterial(Material $material, string $jenisTransaksi, $kuantitas): void
-    {
-        if ($jenisTransaksi === 'Barang Keluar') {
-            $material->increment('stok_sekarang', $kuantitas);
-            return;
-        }
-
-        $material->decrement('stok_sekarang', $kuantitas);
-    }
-
-
-//     public function destroy($id)
-// {
-//    $log = MutasiBarang::findOrFail($id);
-
-//     // 2. Hapus datanya dari database
-//     $log->delete();
-
-//     // 3. Kembalikan ke halaman sebelumnya dengan pesan sukses
-//     return redirect()->back()->with('success', 'Data transaksi material pokok berhasil dihapus dari jurnal!');
-// }
-
 }

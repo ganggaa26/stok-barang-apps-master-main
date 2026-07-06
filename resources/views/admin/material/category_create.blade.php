@@ -32,11 +32,14 @@
                     </div>
 
                     <div class="col-12 col-md-6">
-                        <label for="nama_Kategori" class="form-label text-sm font-semibold text-slate-600 mb-2">
-                            Nama Sub-Kategori / Item Rumpun <span class="text-danger">*</span>
-                        </label>
-                        <select name="nama_Kategori" id="nama_Kategori" class="form-select custom-input" required disabled>
-                            <option value="" disabled selected>-- Pilih Kelompok Material Terlebih Dahulu --</option>
+                        <label class="form-label text-sm font-semibold text-slate-600 mb-2">Nama Sub-Kategori / Item Rumpun <span class="text-danger">*</span></label>
+                        <select class="form-select custom-input" id="nama_kategori" name="nama_kategori" required disabled>
+                            <option value="" disabled selected>-- Pilih atau Ketik Sub-Kategori Baru --</option>
+                            @if(isset($subCategories) && $subCategories->count() > 0)
+                                @foreach($subCategories as $sub)
+                                    <option value="{{ $sub->nama_Kategori }}">{{ $sub->nama_Kategori }}</option>
+                                @endforeach
+                            @endif
                         </select>
                     </div>
                 </div>
@@ -46,40 +49,31 @@
                         Nama Item Barang Fisik <span class="text-danger">*</span>
                     </label>
                     <input type="text" name="nama_item_fisik" id="nama_item_fisik" class="form-control custom-input"
-                           placeholder="Contoh: Kayu Jati, Lem Presto, Sekrup Fix" required>
+                           placeholder="Contoh: Lem Alteco, Lem Johan, Lem Rajawali, Kayu Jati" required autocomplate="off">
                 </div>
 
-                <div class="mb-4">
-                    <label for="tipe_kalkulasi" class="form-label text-sm font-semibold text-slate-600 mb-2">
-                        Tipe Kalkulasi <span class="text-danger">*</span>
-                    </label>
-                    <select name="tipe_kalkulasi" id="tipe_kalkulasi" class="form-select custom-input" required>
-                        <option value="" disabled selected>-- Pilih Tipe Kalkulasi --</option>
-                        <optgroup label="Bahan Pokok">
-                            <option value="volume_kayu">Volume Kayu (T x L x P, hasil M³) — Kayu Solid</option>
-                            <option value="lembar_board">Lembar Board (Merk + Tebal mm) — MDF, Plywood, HMR</option>
-                            <option value="lembar_hpl">Lembar HPL (Merk + Kode Warna) — HPL</option>
-                            <option value="luas_veneer">Luas Veneer (L x P, hasil M²) — Veneer</option>
-                        </optgroup>
-                        <optgroup label="Bahan Pembantu">
-                            <option value="satuan_lem">Satuan Bebas (Merk + Kilo/Liter/Pcs) — Lem</option>
-                            <option value="satuan_sekrup">Satuan + Ukuran (Merk + Ukuran + Pcs/Kotak) — Sekrup</option>
-                            <option value="volume_cairan">Volume Cairan (Merk + Jenis Kimia, Liter) — Cat, Thinner, H2O2</option>
-                            <option value="konversi_amplas">Konversi Roll-Meter (Merk + Grit) — Amplas</option>
-                        </optgroup>
-                    </select>
-                    <p class="text-xs text-slate-400 mt-1.5 mb-0">
-                        Menentukan bentuk form spesifikasi yang akan muncul otomatis saat input transaksi barang ini.
-                    </p>
-                </div>
+                <div class="row g-4 mb-4">
+                   <div class="col-12 col-md-6">
+                    <label class="form-label text-sm font-semibold text-slate-600 mb-2">Tipe Kalkulasi / Rumus Stok <span class="text-danger">*</span></label>
+                    <select id="tipe_kalkulasi" name="tipe_kalkulasi" class="form-select custom-input" required>
+                        <option value="">-- Pilih Tipe Kalkulasi --</option>
+                        <option value="volume_kayu">Volume Kayu (T x L x P, hasil M³)</option>
+                        <option value="lembar_board">Lembar Board (Merk + Tebal mm)</option>
+                        <option value="luas_veneer">Luas Veneer (L x P, hasil M²)</option>
+                        <option value="volume_cairan">Volume Cairan (Merk + Jenis Kimia, Liter)</option>
+                        <option value="konversi_amplas">Konversi Roll-Meter (Merk + Grit) — Amplas</option>
+                        <option value="CUSTOM_RUMUS">📐 Custom Rumus Matematika Sendiri</option>
+                        </select>
+                        
+                        <div id="kotak_rumus_custom" class="mt-2 card p-3 shadow-sm border-dashed" style="display: none; background-color: #f8fafc;">
+                            <label class="text-xs font-semibold text-slate-500 mb-1">Masukkan Rumus Custom:</label>
+                            <input type="text" id="rumus_custom_input" class="form-control" style="font-family: monospace;" placeholder="Contoh: panjang * lebar * tinggi">
+                        </div>
+                    </div>
+                    </div>
 
-                <hr class="border-slate-100 my-4" style="border-top: 1px solid #f1f5f9;">
-
-                <div class="row g-4 mb-5">
                     <div class="col-12 col-md-6">
-                        <label for="satuan_dasar" class="form-label text-sm font-semibold text-slate-600 mb-2">
-                            Satuan Dasar Pengukuran <span class="text-danger">*</span>
-                        </label>
+                        <label class="form-label text-sm font-semibold text-slate-600 mb-2">Satuan Dasar Pengukuran <span class="text-danger">*</span></label>
                         <select name="satuan_dasar" id="satuan_dasar" class="form-select custom-input" required>
                             <option value="" disabled selected>-- Pilih Satuan Pengukuran --</option>
                             <option value="M³">M³ (Kubik)</option>
@@ -87,71 +81,127 @@
                             <option value="Pcs">Pcs</option>
                             <option value="Kg">Kg</option>
                             <option value="Liter">Liter</option>
-                        </select>
+                            <option value="MANUAL">Ketik Manual...</option>
+                            </select>
+                        
+                        <!-- Kotak input kustom dikondisikan default tanpa atribut name dan disabled -->
+                        <div id="kotak_satuan_manual" class="mt-2" style="display: none;">
+                            <label class="text-xs text-slate-500 mb-1">Ketik Satuan Manual:</label>
+                            <input type="text" id="satuan_kustom_input" class="form-control" placeholder="Contoh: Roll, Dus, dll." disabled>
+                        </div>
                     </div>
-                </div>
 
                 <div class="d-flex align-items-center justify-content-end gap-2 pt-3" style="border-top: 1px solid #f1f5f9;">
-                    <a href="{{ route('material.category') }}" class="btn btn-link text-slate-500 text-decoration-none px-4 py-2.5 rounded-3 hover-bg-slate transition" style="font-size: 0.875rem; font-weight: 500;">
-                        Batal
-                    </a>
-
-                    <button type="submit" class="btn text-white px-4 py-2.5 rounded-3 shadow-sm transition d-flex align-items-center gap-2"
-                            style="background-color: #5c5fc8; font-size: 0.875rem; font-weight: 500; border: none;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cursor-fill" viewBox="0 0 16 16">
-                          <path d="M14.082 2.182a.5.5 0 0 1 .103.557L8.528 15.467a.5.5 0 0 1-.917-.007L5.57 10.694.803 8.652a.5.5 0 0 1-.006-.916l12.728-5.657a.5.5 0 0 1 .556.103z"/>
-                        </svg>
+                    <a href="{{ route('material.category') }}" class="btn btn-link text-slate-500 text-decoration-none px-4 py-2.5">Batal</a>
+                    <button type="submit" class="btn text-white px-4 py-2.5 rounded-3" style="background-color: #5c5fc8; border: none;">
                         <span>Simpan Kategori & Item</span>
                     </button>
                 </div>
-
             </form>
         </div>
     </div>
 </div>
 
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<style>
+    /* Menjaga kursor pengetikan sub-kategori kustom tetap terlihat dan proporsional */
+    .ts-wrapper.multi .ts-control > input, 
+    .ts-wrapper .ts-control > input {
+        display: inline-block !important;
+        width: auto !important;
+        position: relative !important;
+        opacity: 1 !important;
+        max-width: 100% !important;
+        min-width: 150px !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+    }
+    .ts-dropdown .create {
+        padding: 8px 12px;
+        background-color: #f8fafc;
+        color: #5c5fc8;
+        font-weight: 600;
+    }
+    .ts-dropdown .active.create {
+        background-color: #5c5fc8;
+        color: #ffffff;
+    }
+    /* Animasi smooth saat kotak input custom muncul */
+    #kotak_rumus_custom, #kotak_satuan_manual {
+        transition: all 0.3s ease-in-out;
+    }
+</style>
+
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const kelompokSelect = document.getElementById('kelompok_material');
-        const namaKategoriSelect = document.getElementById('nama_Kategori');
-        const form = kelompokSelect.closest('form');
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. Ambil elemen HTML asli terlebih dahulu
+    // 1. Ambil elemen HTML asli untuk sub-kategori
+    const namaKategoriSelect = document.getElementById('nama_kategori');
+    
+    // 2. Buka kunci (disabled) HTML bawaan terlebih dahulu agar Tom Select tidak membeku
+    if (namaKategoriSelect) {
+        namaKategoriSelect.removeAttribute('disabled');
+    }
 
-        const optionsData = {
-            "Material Pokok": [
-                { value: "Kayu Solid", text: "Kayu Solid (Solid Wood)" },
-                { value: "Olahan Kayu", text: "Olahan Kayu (Engineered Wood & Board)" },
-                { value: "Pelapis / Laminasi", text: "Pelapis / Laminasi (Laminate & Veneer)" }
-            ],
-            "Material Pembantu": [
-                { value: "Cairan Finishing", text: "Cairan Finishing (Chemicals & Coatings)" },
-                { value: "Bahan Pendukung Finishing", text: "Bahan Pendukung Finishing (Finishing Consumables)" },
-                { value: "Perekat", text: "Perekat (Adhesives)" },
-                { value: "Pengikat", text: "Pengikat (Fasteners)" }
-            ]
-        };
+    // 3. Inisialisasi Tom Select untuk Kelompok Material (Urutan mengikuti HTML asli: Pokok lalu Pembantu)
+    var tsKelompok = new TomSelect('#kelompok_material', {
+        create: false
+    });
 
-        kelompokSelect.addEventListener('change', function () {
-            const selectedValue = this.value;
+    // 4. Inisialisasi Tom Select untuk Sub-Kategori (Menggunakan ID huruf k kecil)
+    var tsCategory = new TomSelect('#nama_kategori', {
+        create: true, 
+        placeholder: "🔍 Pilih atau Ketik Sub-Kategori Baru..."
+    });
 
-            namaKategoriSelect.innerHTML = '<option value="" disabled selected>-- Pilih Sub-Kategori Spesifik --</option>';
+    // 5. Logika Menampilkan Kotak Rumus Custom secara Dinamis
+    const tipeKalkulasi = document.getElementById('tipe_kalkulasi');
+    const kotakRumusCustom = document.getElementById('kotak_rumus_custom');
+    const rumusCustomInput = document.getElementById('rumus_custom_input');
 
-            if (optionsData[selectedValue]) {
-                namaKategoriSelect.disabled = false;
-
-                optionsData[selectedValue].forEach(function (item) {
-                    const option = document.createElement('option');
-                    option.value = item.value;
-                    option.text = item.text;
-                    namaKategoriSelect.appendChild(option);
-                });
+    if (tipeKalkulasi && kotakRumusCustom) {
+        tipeKalkulasi.addEventListener('change', function() {
+            if (this.value === 'CUSTOM_RUMUS') {
+                kotakRumusCustom.style.display = 'block';
+                if (rumusCustomInput) rumusCustomInput.setAttribute('required', 'required');
             } else {
-                namaKategoriSelect.disabled = true;
+                kotakRumusCustom.style.display = 'none';
+                if (rumusCustomInput) {
+                    rumusCustomInput.removeAttribute('required');
+                    rumusCustomInput.value = '';
+                }
             }
         });
+    }
 
-        form.addEventListener('submit', function () {
-            namaKategoriSelect.disabled = false;
+    // 6. Logika Menampilkan Kotak Satuan Manual secara Dinamis
+    const satuanDasar = document.getElementById('satuan_dasar');
+    const kotakSatuanManual = document.getElementById('kotak_satuan_manual');
+    const satuanKustomInput = document.getElementById('satuan_kustom_input');
+
+    if (satuanDasar && kotakSatuanManual) {
+        satuanDasar.addEventListener('change', function() {
+            if (this.value === 'MANUAL') {
+                kotakSatuanManual.style.display = 'block';
+                if (satuanKustomInput) {
+                    satuanKustomInput.removeAttribute('disabled');
+                    satuanKustomInput.setAttribute('required', 'required');
+                }
+            } else {
+                kotakSatuanManual.style.display = 'none';
+                if (satuanKustomInput) {
+                    satuanKustomInput.setAttribute('disabled', 'disabled');
+                    satuanKustomInput.removeAttribute('required');
+                    satuanKustomInput.value = '';
+                }
+            }
         });
-    });
+    }
+});
 </script>
 @endsection

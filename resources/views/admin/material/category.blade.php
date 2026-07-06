@@ -19,26 +19,23 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {{-- Loop data dari controller --}}
                         @foreach ($categories as $index => $cat)
-                        <tr>
-                            <td class="ps-4">{{ $index + 1 }}</td>
-                            <td>{{ $cat->nama_Kategori }}</td>
-                            
-                            <td>
-                                <span class="badge {{ $cat->kelompok_material == 'Material Pokok' ? 'bg-primary' : 'bg-success' }}">
-                                    {{ $cat->kelompok_material }}
-                                </span>
-                            </td>
-                            
-                            <td>{{ $cat->satuan_dasar }}</td>
-                        </tr>
+                            <tr>
+                                <td class="ps-4">{{ $index + 1 }}</td>
+                                <td>{{ $cat->nama_Kategori }}</td>
+                                <td>
+                                    <span class="badge {{ $cat->kelompok_material == 'Material Pokok' ? 'bg-primary' : 'bg-success' }}">
+                                        {{ $cat->kelompok_material }}
+                                    </span>
+                                </td>
+                                <td>{{ $cat->satuan_dasar }}</td>
+                            </tr>
                         @endforeach
                         
                         @if($categories->isEmpty())
-                        <tr>
-                            <td colspan="4" class="text-center text-muted py-4">Belum ada data kategori.</td>
-                        </tr>
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">Belum ada data kategori.</td>
+                            </tr>
                         @endif
                     </tbody>
                 </table>

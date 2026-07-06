@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Category;
 use App\Models\Material;
 use App\Models\MasterMaterialPembantu;
+use App\Models\CalculationType;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
@@ -17,31 +18,39 @@ class CategoryController extends Controller
     }
 
     public function create()
-    {
-        return view('admin.material.category_create');
+    {   
+        $calculationTypes = CalculationType::all();
+        $subCategories = Category::select('nama_Kategori as nama_kategori')->distinct()->get();
+        
+        if (!$subCategories) {
+            $subCategories = collect();
+        }
+        
+        //  1: Memasukkan kembali 'subCategories' ke dalam compact agar tidak undefined di Blade
+        return view('admin.material.category_create', compact('calculationTypes', 'subCategories'));
     }
 
     public function store(Request $request)
     {
-        // 1. Validasi Input
+        //  2: Mengubah validasi tipe_kalkulasi menjadi string biasa (max:255)
+        // Ini dilakukan agar input rumus buatanmu seperti '2*2' tidak ditolak oleh system
         $request->validate([
-            'nama_Kategori'     => 'required|string|max:255',
+            'nama_kategori'     => 'required|string|max:255',
             'kelompok_material' => 'required|string|max:255',
             'satuan_dasar'      => 'required|string|max:50',
             'nama_item_fisik'   => 'required|string|max:255',
-            'tipe_kalkulasi'    => 'required|string|in:volume_kayu,lembar_board,lembar_hpl,luas_veneer,satuan_lem,satuan_sekrup,volume_cairan,konversi_amplas',
+            'tipe_kalkulasi'    => 'required|string|max:255', 
         ]);
 
-        // 2. Cari kategori yang sudah ada (berdasarkan nama + kelompok),
-        // atau buat baru kalau belum ada. Ini mencegah duplikat kategori
-        // setiap kali form ini disubmit dengan sub-kategori yang sama.
+        //  3: Menyelaraskan nama request key (nama_kategori kecil sesuai dengan validasi diatas)
         $category = Category::firstOrCreate(
             [
-                'nama_Kategori'     => $request->nama_Kategori,
+                'nama_Kategori'     => $request->nama_kategori,
                 'kelompok_material' => $request->kelompok_material,
             ],
             [
-                'satuan_dasar' => $request->satuan_dasar,
+                'satuan_dasar'   => $request->satuan_dasar,
+                'tipe_kalkulasi' => $request->tipe_kalkulasi, 
             ]
         );
 
@@ -52,13 +61,18 @@ class CategoryController extends Controller
 
         $kelompok = strtolower(trim($request->kelompok_material));
 
-        // 4. Logika Percabangan
+        //  4 (SOLUSI UTAMA ERROR DB SQLSRV): 
+        // Mengamankan nilai tipe_kalkulasi langsung dari request input agar tidak bernilai NULL 
+        // ketika kategori lama ditemukan namun record material baru mau didaftarkan
+        $tipeKalkulasiFix = $request->tipe_kalkulasi;
+
+        // 4. Logika Percabangan Penyimpanan Data
         if (str_contains($kelompok, 'pokok')) {
             Material::create([
                 'kode_material'  => $kodeMaterial,
                 'nama_material'  => $request->nama_item_fisik,
                 'jenis_material' => $category->nama_Kategori,
-                'tipe_kalkulasi' => $request->tipe_kalkulasi,
+                'tipe_kalkulasi' => $tipeKalkulasiFix, // Menggunakan variabel pengaman
                 'satuan'         => $request->satuan_dasar,
                 'stok_sekarang'  => 0,
                 'stok_minimum'   => 0,
@@ -68,7 +82,7 @@ class CategoryController extends Controller
                 'kode_material'  => $kodeMaterial,
                 'nama_material'  => $request->nama_item_fisik,
                 'jenis_material' => $category->nama_Kategori,
-                'tipe_kalkulasi' => $request->tipe_kalkulasi,
+                'tipe_kalkulasi' => $tipeKalkulasiFix, // Menggunakan variabel pengaman
                 'satuan'         => $request->satuan_dasar,
                 'stok_sekarang'  => 0,
                 'stok_minimum'   => 0,
@@ -77,5 +91,25 @@ class CategoryController extends Controller
 
         // 5. Redirect
         return redirect()->route('material.category')->with('success', 'Kategori dan Material berhasil ditambahkan!');
+    }
+
+    public function edit($id)
+    {
+        $category = Category::findOrFail($id);
+        return view('admin.material.category_edit', compact('category'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nama_Kategori' => 'required|string|max:255',
+        ]);
+
+        $category = Category::findOrFail($id);
+        $category->update([
+            'nama_Kategori' => $request->nama_Kategori,
+        ]);
+
+        return redirect()->route('material.category')->with('success', 'Kategori berhasil diperbarui.');
     }
 }
