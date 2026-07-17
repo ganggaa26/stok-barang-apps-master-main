@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Material;
 use App\Models\MasterMaterialPembantu;
-use App\Models\CalculationType;
+
 
 class Category extends Model
 {
@@ -17,17 +17,25 @@ class Category extends Model
     protected $fillable = [
         'nama_Kategori',
         'kelompok_material',
+        'kategori',
         'satuan_dasar',
         'tipe_kalkulasi',
     ];
 
     public function materials()
     {
-        return $this->hasMany(Material::class, 'jenis_material', 'nama_Kategori');
+          return $this->hasMany(Material::class, 'category_id');
     }
 
     public function materialPembantus()
     {
-        return $this->hasMany(MasterMaterialPembantu::class, 'jenis_material', 'nama_Kategori');
+          return $this->hasMany(MasterMaterialPembantu::class, 'category_id');
     }
+
+    public function getItemsAttribute()
+{
+    return $this->kelompok_material === 'Material Pokok'
+        ? $this->materials
+        : $this->materialPembantus;
+}
 }

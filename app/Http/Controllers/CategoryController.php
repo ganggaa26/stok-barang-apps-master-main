@@ -8,72 +8,88 @@ use App\Models\Material;
 use App\Models\MasterMaterialPembantu;
 use App\Models\CalculationType;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class CategoryController extends Controller
 {
-    public function index()
-    {
-        $categories = Category::all();
-        return view('admin.material.category', compact('categories'));
-    }
+   public function index()
+{
+    $categories = Category::with(['materials', 'materialPembantus'])
+        ->orderBy('kategori')
+        ->orderBy('nama_Kategori')
+        ->get();
 
-    public function create()
-    {   
-        $calculationTypes = CalculationType::all();
-        $subCategories = Category::select('nama_Kategori as nama_kategori')->distinct()->get();
-        
-        if (!$subCategories) {
-            $subCategories = collect();
-        }
-        
-        //  1: Memasukkan kembali 'subCategories' ke dalam compact agar tidak undefined di Blade
-        return view('admin.material.category_create', compact('calculationTypes', 'subCategories'));
-    }
+    return view('admin.material.category', compact('categories'));
+}
 
-    public function store(Request $request)
-    {
-        //  2: Mengubah validasi tipe_kalkulasi menjadi string biasa (max:255)
-        // Ini dilakukan agar input rumus buatanmu seperti '2*2' tidak ditolak oleh system
-        $request->validate([
-            'nama_kategori'     => 'required|string|max:255',
-            'kelompok_material' => 'required|string|max:255',
-            'satuan_dasar'      => 'required|string|max:50',
-            'nama_item_fisik'   => 'required|string|max:255',
-            'tipe_kalkulasi'    => 'required|string|max:255', 
-        ]);
+public function create()
+{
+    $calculationTypes = CalculationType::all();
 
-        //  3: Menyelaraskan nama request key (nama_kategori kecil sesuai dengan validasi diatas)
+    $subCategories = Category::select('nama_Kategori as nama_kategori', 'kategori', 'kelompok_material')
+        ->distinct()
+        ->get();
+
+    // Daftar Kategori sekarang dikelompokkan per Kelompok Material
+    $daftarKategori = [
+        'Material Pokok' => [
+            'Kayu ',
+            'Board',
+            'Pelapis',
+        ],
+        'Material Pembantu' => [
+            'Cairan Finishing',
+            'Perekat / Lem',
+            'Amplas',
+            'Sekrup / Hardware',
+        ],
+    ];
+
+    return view('admin.material.category_create', compact('calculationTypes', 'subCategories', 'daftarKategori'));
+}
+
+
+
+public function store(Request $request)
+{
+    $request->validate([
+        'kategori'             => 'required|string|max:255',
+        'nama_kategori'        => 'required|string|max:255',
+        'kelompok_material'    => 'required|string|max:255',
+        'satuan_dasar'         => 'required|string|max:50',
+        'satuan_kustom_input'  => 'required_if:satuan_dasar,MANUAL|nullable|string|max:50',
+        'nama_item_fisik'      => 'required|string|max:255',
+        'tipe_kalkulasi'       => 'required|string|max:255',
+    ]);
+
+    $satuanFinal = $request->satuan_dasar === 'MANUAL'
+        ? $request->satuan_kustom_input
+        : $request->satuan_dasar;
+
+    DB::transaction(function () use ($request, $satuanFinal) {
         $category = Category::firstOrCreate(
             [
                 'nama_Kategori'     => $request->nama_kategori,
                 'kelompok_material' => $request->kelompok_material,
+                'kategori'          => $request->kategori,
             ],
             [
-                'satuan_dasar'   => $request->satuan_dasar,
-                'tipe_kalkulasi' => $request->tipe_kalkulasi, 
+                'satuan_dasar'   => $satuanFinal,
+                'tipe_kalkulasi' => $request->tipe_kalkulasi,
             ]
         );
 
-        // 3. Generate Kode Material
         $prefix = 'MAT-' . date('ymd') . '-';
-        $randomString = strtoupper(Str::random(4));
-        $kodeMaterial = $prefix . $randomString;
-
+        $kodeMaterial = $prefix . strtoupper(Str::random(4));
         $kelompok = strtolower(trim($request->kelompok_material));
 
-        //  4 (SOLUSI UTAMA ERROR DB SQLSRV): 
-        // Mengamankan nilai tipe_kalkulasi langsung dari request input agar tidak bernilai NULL 
-        // ketika kategori lama ditemukan namun record material baru mau didaftarkan
-        $tipeKalkulasiFix = $request->tipe_kalkulasi;
-
-        // 4. Logika Percabangan Penyimpanan Data
         if (str_contains($kelompok, 'pokok')) {
             Material::create([
                 'kode_material'  => $kodeMaterial,
                 'nama_material'  => $request->nama_item_fisik,
-                'jenis_material' => $category->nama_Kategori,
-                'tipe_kalkulasi' => $tipeKalkulasiFix, // Menggunakan variabel pengaman
-                'satuan'         => $request->satuan_dasar,
+                'category_id'    => $category->id,
+                'tipe_kalkulasi' => $request->tipe_kalkulasi,
+                'satuan'         => $satuanFinal,
                 'stok_sekarang'  => 0,
                 'stok_minimum'   => 0,
             ]);
@@ -81,35 +97,93 @@ class CategoryController extends Controller
             MasterMaterialPembantu::create([
                 'kode_material'  => $kodeMaterial,
                 'nama_material'  => $request->nama_item_fisik,
-                'jenis_material' => $category->nama_Kategori,
-                'tipe_kalkulasi' => $tipeKalkulasiFix, // Menggunakan variabel pengaman
-                'satuan'         => $request->satuan_dasar,
+                'category_id'    => $category->id,
+                'tipe_kalkulasi' => $request->tipe_kalkulasi,
+                'satuan'         => $satuanFinal,
                 'stok_sekarang'  => 0,
                 'stok_minimum'   => 0,
             ]);
         }
+    });
 
-        // 5. Redirect
-        return redirect()->route('material.category')->with('success', 'Kategori dan Material berhasil ditambahkan!');
-    }
+    return redirect()->route('material.category')->with('success', 'Kategori dan Material berhasil ditambahkan!');
+}
 
-    public function edit($id)
-    {
-        $category = Category::findOrFail($id);
-        return view('admin.material.category_edit', compact('category'));
-    }
+ public function edit($id)
+{
+    $category = Category::with(['materials', 'materialPembantus'])->findOrFail($id);
 
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'nama_Kategori' => 'required|string|max:255',
-        ]);
+    $daftarKategori = [
+        'Material Pokok' => [
+            'Kayu Solid',
+            'Board',
+            'Pelapis',
+        ],
+        'Material Pembantu' => [
+            'Cairan Finishing',
+            'Perekat / Lem',
+            'Amplas',
+            'Sekrup / Hardware',
+        ],
+    ];
 
-        $category = Category::findOrFail($id);
+    $opsiKategori = $daftarKategori[$category->kelompok_material] ?? [];
+
+    return view('admin.material.category_edit', compact('category', 'opsiKategori'));
+}
+
+public function update(Request $request, $id)
+{
+    $request->validate([
+        'nama_Kategori'          => 'required|string|max:255',
+        'kategori'               => 'required|string|max:255',
+        'satuan_dasar'           => 'required|string|max:50',
+        'items'                  => 'nullable|array',
+        'items.*.nama_material'  => 'required|string|max:255',
+    ]);
+
+    $category = Category::findOrFail($id);
+
+    DB::transaction(function () use ($request, $category) {
         $category->update([
             'nama_Kategori' => $request->nama_Kategori,
+            'kategori'      => $request->kategori,
+            'satuan_dasar'  => $request->satuan_dasar,
         ]);
 
-        return redirect()->route('material.category')->with('success', 'Kategori berhasil diperbarui.');
+        if ($request->has('items')) {
+            $isPokok = str_contains(strtolower($category->kelompok_material), 'pokok');
+
+            foreach ($request->items as $itemId => $itemData) {
+                if ($isPokok) {
+                    Material::where('id', $itemId)
+                        ->where('category_id', $category->id)
+                        ->update(['nama_material' => $itemData['nama_material']]);
+                } else {
+                    MasterMaterialPembantu::where('id', $itemId)
+                        ->where('category_id', $category->id)
+                        ->update(['nama_material' => $itemData['nama_material']]);
+                }
+            }
+        }
+    });
+
+    return redirect()->route('material.category')->with('success', 'Kategori berhasil diperbarui.');
+}
+
+public function destroy($id)
+{
+    $category = Category::findOrFail($id);
+
+    $jumlahItem = $category->materials()->count() + $category->materialPembantus()->count();
+
+    if ($jumlahItem > 0) {
+        return redirect()->route('material.category')
+            ->with('error', "Tidak bisa dihapus, kategori ini masih memiliki {$jumlahItem} item material.");
     }
+
+    $category->delete();
+
+    return redirect()->route('material.category')->with('success', 'Kategori berhasil dihapus.');
+}
 }

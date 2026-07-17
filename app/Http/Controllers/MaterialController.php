@@ -11,30 +11,27 @@ use DB;
 
 class MaterialController extends Controller
 {
-    public function index()
-    {
-        // 1. Ambil data kategori untuk dropdown Sub-Kategori
-        $categories = Category::where('kelompok_material', 'LIKE', '%pokok%')->get();
+   public function index(Request $request)
+{
+    $categories = Category::where('kelompok_material', 'LIKE', '%pokok%')->get();
 
-        $materials = Material::with('kategori')->get()->map(function ($item) {
-            // Otomatis pasang tipe_kalkulasi dari relasi kategori jika ada
-            $item->tipe_kalkulasi = $item->kategori ? $item->kategori->tipe_kalkulasi : 'volume_kayu';
-            return $item;
-        });
+    $materials = Material::with('kategori')->get()->map(function ($item) {
+        $item->tipe_kalkulasi = $item->kategori ? $item->kategori->tipe_kalkulasi : 'volume_kayu';
+        return $item;
+    });
 
-        // 3. Ambil data mutasi/jurnal transaksi untuk tabel riwayat di bawah
-        $mutasiks = MutasiBarang::latest()->get(); 
+    // Ambil SEMUA riwayat — filter minggu/tanggal ditangani JS di sisi client
+    $mutasiks = MutasiBarang::latest()->get();
 
-        // 4. Kirim ketiganya ke view
-        return view('admin.material.pokok', compact('categories', 'materials', 'mutasiks'));
-    }
+    return view('admin.material.pokok', compact('categories', 'materials', 'mutasiks'));
+}
 
   public function store(Request $request)
 {
     // 1. Validasi Input Form dari JS
     $request->validate([
         'jenis_transaksi'   => 'required|string',
-        'tanggal_transaksi' => 'nullable|date', 
+        'tanggal' => 'nullable|date', 
         'material_id'       => 'required', 
         'kuantitas'         => 'required|numeric',
         'qty_fisik'         => 'required|numeric',
@@ -42,13 +39,14 @@ class MaterialController extends Controller
     ]);
 
     // 2. Pengaman Tanggal Transaksi Otomatis
-    $tanggalRaw = $request->input('tanggal_transaksi');
+    $tanggalRaw = $request->input('tanggal');
     if (empty($tanggalRaw) || str_starts_with($tanggalRaw, '00') || str_starts_with($tanggalRaw, '02')) {
         $tanggalRaw = date('Y-m-d'); 
     }
 
     // 3. Ambil data master material asal
     $material = Material::findOrFail($request->material_id);
+    $namaKategoriMaterial = optional($material->kategori)->nama_Kategori ?? $material->jenis_material ?? 'Tidak Diketahui';
     $textSupplier = trim($request->input('asal_barang') ?? $request->input('asalBarang') ?? $request->input('asal_supplier') ?? '');
     $textProyek = trim($request->input('nama_proyek') ?? $request->input('namaProyek') ?? '');
 
@@ -74,7 +72,7 @@ class MaterialController extends Controller
     // 5. Simpan data ke database
     MutasiBarang::create([
         'material_id'        => $material->id,
-        'kategori_material'  => $material->jenis_material, 
+        'kategori_material'  =>$namaKategoriMaterial, 
         'jenis_transaksi'    => $request->jenis_transaksi,
         'tangal'            => $tanggalRaw, // Menyesuaikan nama kolom 'tanggal' di DB kamu
         'tanggal'            => $tanggalRaw,
@@ -85,6 +83,7 @@ class MaterialController extends Controller
         'qty_fisik'          => $request->qty_fisik,   
         'kuantitas'          => $request->kuantitas,   
         'spesifikasi_lokasi' => $request->spesifikasi, 
+        'lokasi_gudang'      => $request->input('lokasi_gudang'),
         
         'asal_supplier'      => $asalSupplierFinal,
         'nama_proyek'        => $namaProyekFinal,
@@ -138,6 +137,7 @@ class MaterialController extends Controller
         'qty_fisik'          => $request->input('qty_fisik') ?? $mutasi->qty_fisik,
         'kuantitas'          => $request->input('kuantitas') ?? $mutasi->kuantitas,
         'spesifikasi_lokasi' => $request->input('spesifikasi_lokasi') ?? $mutasi->spesifikasi_lokasi,
+        'lokasi_gudang'      => $request->input('lokasi_gudang') ?? $mutasi->lokasi_gudang,
         
         'asal_supplier'      => $asalSupplierFinal,
         'nama_proyek'        => $namaProyekFinal,

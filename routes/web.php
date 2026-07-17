@@ -6,7 +6,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MaterialPembantuController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\LaporanController; // Controller laporan kita panggil di sini
+use App\Http\Controllers\LaporanController; 
 use App\Models\MutasiBarang;
 
 Route::get('/', function () {
@@ -22,48 +22,142 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // --- DASHBOARD ---
-    Route::get('/dashboard', function () {
-        $totalMaterial = DB::table('materials')->count();
+Route::get('/dashboard', function () {
+    // Total material = Pokok + Pembantu
+    $totalMaterial = DB::table('materials')->count()
+        + DB::table('master_material_pembantus')->count();
 
-        $totalTransaksi = DB::table('mutasi_barangs')
+    // Barang Masuk bulan ini (Pokok + Pembantu), TIDAK termasuk Stok Awal
+    $totalBarangMasuk = DB::table('mutasi_barangs')
+            ->where('jenis_transaksi', 'Barang Masuk')
+            ->whereMonth('tanggal', now()->month)
+            ->whereYear('tanggal', now()->year)
+            ->count()
+        + DB::table('mutasi_material_pembantus')
+            ->where('jenis_transaksi', 'Barang Masuk')
             ->whereMonth('tanggal', now()->month)
             ->whereYear('tanggal', now()->year)
             ->count();
 
-        $materialMenipis = DB::table('materials')
-            ->whereRaw('stok_sekarang <= stok_minimum')
-            ->get();
+    // Barang Keluar bulan ini (Pokok + Pembantu)
+    $totalBarangKeluar = DB::table('mutasi_barangs')
+            ->where('jenis_transaksi', 'Barang Keluar')
+            ->whereMonth('tanggal', now()->month)
+            ->whereYear('tanggal', now()->year)
+            ->count()
+        + DB::table('mutasi_material_pembantus')
+            ->where('jenis_transaksi', 'Barang Keluar')
+            ->whereMonth('tanggal', now()->month)
+            ->whereYear('tanggal', now()->year)
+            ->count();
 
-        return view('dashboard', compact(
-            'totalMaterial',
-            'totalTransaksi',
-            'materialMenipis'
-        ));
-    })->middleware(['auth', 'verified'])->name('dashboard');
+   $menipisPokok = DB::table('materials')
+    ->leftJoin('categories', 'materials.category_id', '=', 'categories.id')
+    ->select('materials.*', 'categories.nama_Kategori as kategori_nama')
+    ->where('materials.stok_sekarang', '<=', 0)
+    ->get();
 
-    // --- MATERIAL POKOK (Menggunakan MaterialController) ---
-    Route::get('/material/pokok', [MaterialController::class, 'index'])->name('material.pokok');
-    Route::post('/material/pokok/store', [MaterialController::class, 'store'])->name('material.pokok.store');
-    Route::get('/material/pokok/{id}/edit', [MaterialController::class, 'edit'])->name('material.pokok.edit');
-    Route::put('/material/pokok/{id}', [MaterialController::class, 'update'])->name('material.pokok.update');
-    
-    // HAPUS: Kita daftarkan route delete di sini agar tombol hapus berfungsi!
-    Route::delete('/material/pokok/{id}', [MaterialController::class, 'destroy'])->name('material.pokok.destroy');
+    $menipisPembantu = DB::table('master_material_pembantus')
+        ->leftJoin('categories', 'master_material_pembantus.category_id', '=', 'categories.id')
+        ->select('master_material_pembantus.*', 'categories.nama_Kategori as kategori_nama')
+        ->where('master_material_pembantus.stok_sekarang', '<=', 0)
+        ->get()
+        ->map(function ($item) {
+            $item->size = null;
+            $item->kualitas = null;
+            $item->lokasi_gudang = null;
+            $item->stok_minimum = $item->stok_minimum ?? 0;
+            return $item;
+    });
 
-    // --- MATERIAL PEMBANTU (Menggunakan MaterialPembantuController) ---
-    Route::get('/material/pembantu', [MaterialPembantuController::class, 'index'])->name('material.pembantu');
-    Route::post('/material/pembantu/store', [MaterialPembantuController::class, 'store'])->name('material.pembantu.store');
-    Route::get('/material/pembantu/edit/{id}', [MaterialPembantuController::class, 'edit'])->name('material.pembantu.edit');
-    Route::put('/material/pembantu/update/{id}', [MaterialPembantuController::class, 'update'])->name('material.pembantu.update');
-    Route::delete('/material/pembantu/{id}', [MaterialPembantuController::class, 'destroy'])->name('material.pembantu.destroy');
+    $semuaMaterialMenipis = $menipisPokok->merge($menipisPembantu);
 
-    // --- MUTASI / TRANSAKSI STOK ---
-    Route::post('/material/mutasi', [MaterialController::class, 'storeMutasi'])->name('material.storeMutasi');
+    // Total ASLI (dipakai di card "Peringatan"), dihitung SEBELUM dipotong 5
+    $totalMaterialMenipis = $semuaMaterialMenipis->count();
 
-    // --- MASTER DATA KATEGORI ---
-    Route::get('/material/category', [CategoryController::class, 'index'])->name('material.category');
-    Route::get('/material/category/create', [CategoryController::class, 'create'])->name('material.category.create');
-    Route::post('/material/category/store', [CategoryController::class, 'store'])->name('material.category.store');
+    // Dashboard cuma nampilin 5 yang PALING kritis
+    // (selisih stok_minimum - stok_sekarang paling besar)
+    $materialMenipis = $semuaMaterialMenipis
+        ->sortByDesc(function ($item) {
+            return ($item->stok_minimum ?? 0) - $item->stok_sekarang;
+        })
+        ->take(5)
+        ->values();
+
+    // Data grafik Weekly Transaction Trends: Senin s.d Minggu minggu ini
+    $namaHari = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    $awalMinggu = now()->startOfWeek(); // Senin
+
+    $weeklyLabels = [];
+    $weeklyIncoming = [];
+    $weeklyOutgoing = [];
+
+    for ($i = 0; $i < 7; $i++) {
+        $tanggal = $awalMinggu->copy()->addDays($i);
+        $weeklyLabels[] = $namaHari[$i];
+
+        $masuk = DB::table('mutasi_barangs')
+                ->where('jenis_transaksi', 'Barang Masuk')
+                ->whereDate('tanggal', $tanggal)
+                ->count()
+            + DB::table('mutasi_material_pembantus')
+                ->where('jenis_transaksi', 'Barang Masuk')
+                ->whereDate('tanggal', $tanggal)
+                ->count();
+
+        $keluar = DB::table('mutasi_barangs')
+                ->where('jenis_transaksi', 'Barang Keluar')
+                ->whereDate('tanggal', $tanggal)
+                ->count()
+            + DB::table('mutasi_material_pembantus')
+                ->where('jenis_transaksi', 'Barang Keluar')
+                ->whereDate('tanggal', $tanggal)
+                ->count();
+
+        $weeklyIncoming[] = $masuk;
+        $weeklyOutgoing[] = $keluar;
+    }
+
+    return view('dashboard', compact(
+        'totalMaterial',
+        'totalBarangMasuk',
+        'totalBarangKeluar',
+        'materialMenipis',
+        'totalMaterialMenipis',
+        'weeklyLabels',
+        'weeklyIncoming',
+        'weeklyOutgoing'
+    ));
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+   // --- KHUSUS ADMIN: MATERIAL POKOK, PEMBANTU, KATEGORI ---
+    Route::middleware('admin')->group(function () {
+
+        // --- MATERIAL POKOK (Menggunakan MaterialController) ---
+        Route::get('/material/pokok', [MaterialController::class, 'index'])->name('material.pokok');
+        Route::post('/material/pokok/store', [MaterialController::class, 'store'])->name('material.pokok.store');
+        Route::get('/material/pokok/{id}/edit', [MaterialController::class, 'edit'])->name('material.pokok.edit');
+        Route::put('/material/pokok/{id}', [MaterialController::class, 'update'])->name('material.pokok.update');
+        Route::delete('/material/pokok/{id}', [MaterialController::class, 'destroy'])->name('material.pokok.destroy');
+
+        // --- MATERIAL PEMBANTU (Menggunakan MaterialPembantuController) ---
+        Route::get('/material/pembantu', [MaterialPembantuController::class, 'index'])->name('material.pembantu');
+        Route::post('/material/pembantu/store', [MaterialPembantuController::class, 'store'])->name('material.pembantu.store');
+        Route::get('/material/pembantu/edit/{id}', [MaterialPembantuController::class, 'edit'])->name('material.pembantu.edit');
+        Route::put('/material/pembantu/update/{id}', [MaterialPembantuController::class, 'update'])->name('material.pembantu.update');
+        Route::delete('/material/pembantu/{id}', [MaterialPembantuController::class, 'destroy'])->name('material.pembantu.destroy');
+
+        // --- MUTASI / TRANSAKSI STOK ---
+        Route::post('/material/mutasi', [MaterialController::class, 'storeMutasi'])->name('material.storeMutasi');
+
+        // --- MASTER DATA KATEGORI ---
+        Route::get('/material/category', [CategoryController::class, 'index'])->name('material.category');
+        Route::get('/material/category/create', [CategoryController::class, 'create'])->name('material.category.create');
+        Route::post('/material/category/store', [CategoryController::class, 'store'])->name('material.category.store');
+        Route::get('/material/category/{id}/edit', [CategoryController::class, 'edit'])->name('material.category.edit');
+        Route::put('/material/category/{id}', [CategoryController::class, 'update'])->name('material.category.update');
+        Route::delete('/material/category/{id}', [CategoryController::class, 'destroy'])->name('material.category.destroy');
+    });
 
     // --- PELAPORAN (DIALIKHAN KE LAPORAN CONTROLLER AGAR REAL-TIME & BISA FILTER) ---
     
@@ -71,42 +165,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/laporan/stok', [LaporanController::class, 'laporanStok'])->name('laporan.stok');
 
     // 2. Jalur Jurnal Laporan Barang Masuk
-Route::get('/laporan/barang-masuk', [LaporanController::class, 'barangMasuk'])->name('laporan.masuk');
+    Route::get('/laporan/barang-masuk', [LaporanController::class, 'barangMasuk'])->name('laporan.masuk');
     
     // 3. Jalur Jurnal Laporan Barang Keluar
-    Route::get('/laporan/barang-keluar', function () {
-        $barangKeluarPokok = DB::table('mutasi_barangs')
-            ->join('materials', 'mutasi_barangs.material_id', '=', 'materials.id')
-            ->where('mutasi_barangs.jenis_transaksi', 'Barang Keluar')
-            ->select(
-                'mutasi_barangs.*',
-                'materials.nama_material',
-                'materials.kode_material',
-                'materials.satuan',
-                DB::raw("'Pokok' as kategori")
-            )
-            ->get();
-
-        $barangKeluarPembantu = DB::table('mutasi_barangs')
-            ->join('master_material_pembantus', 'mutasi_barangs.material_id', '=', 'master_material_pembantus.id')
-            ->where('mutasi_barangs.jenis_transaksi', 'Barang Keluar')
-            ->select(
-                'mutasi_barangs.*',
-                'master_material_pembantus.nama_material',
-                'master_material_pembantus.kode_material',
-                'master_material_pembantus.satuan',
-                DB::raw("'Pembantu' as kategori")
-            )
-            ->get();
-
-        $barangKeluar = $barangKeluarPokok
-            ->merge($barangKeluarPembantu)
-            ->sortByDesc('tanggal')
-            ->values();
-
-        return view('laporan.Barang-keluar', compact('barangKeluar'));
-    })->name('laporan.keluar');
-
+    Route::get('/laporan/barang-keluar', [LaporanController::class, 'barangKeluar'])->name('laporan.keluar'); 
 });
 
 require __DIR__.'/auth.php';

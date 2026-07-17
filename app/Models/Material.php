@@ -9,16 +9,14 @@ class Material extends Model
 {
     use HasFactory;
 
-    protected $table = 'materials'; // Memastikan mengarah ke tabel materials
+    protected $table = 'materials';
 
-    protected $guarded = []; // Atau masukkan fillable-mu jika ada
+    protected $guarded = [];
 
-    // Wajib Tambahkan Fungsi Ini di Sini!
-   public function kategori()
-{
-    // Menghubungkan kolom kategori_material (atau category_id) ke id tabel categories
-    return $this->belongsTo(Category::class, 'kategori_material', 'id'); 
-}
+    public function kategori()
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
 
     public function mutasis()
     {

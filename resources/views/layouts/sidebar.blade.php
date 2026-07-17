@@ -1,7 +1,7 @@
 <nav class="navbar-vertical navbar">
     <div class="nav-scroller">
         <a class="navbar-brand fw-bold text-white fs-3" href="#">
-            PKSD-Inventory
+            PKSD-Inventaris
         </a>
         
         <ul class="navbar-nav flex-column" id="sideNavbar">
@@ -14,6 +14,14 @@
 
             @if(auth()->user()->role === 'admin')
             <li class="nav-item">
+                <div class="navbar-heading">Data Master</div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ Request::routeIs('material.category') ? 'active' : '' }}" href="{{ route('material.category') }}">
+                    <i class="nav-icon icon-xs me-2">🏷️</i> Kategori Material
+                </a>
+            </li>
+            <li class="nav-item">
                 <div class="navbar-heading">Manajemen Material</div>
             </li>
 
@@ -24,7 +32,7 @@
                 data-bs-target="#navBahanBaku" 
                 aria-expanded="{{ Request::is('material/pokok') || Request::is('material/pembantu') ? 'true' : 'false' }}" 
                 aria-controls="navBahanBaku">
-                    <i class="nav-icon icon-xs me-2">📦</i> Bahan Baku
+                    <i class="nav-icon icon-xs me-2">📦</i> Input Stok
                 </a>
                 <div id="navBahanBaku" 
                 class="collapse {{ Request::is('material/pokok') || Request::is('material/pembantu') ? 'show' : '' }}">
@@ -41,15 +49,6 @@
                         </li>
                     </ul>
                 </div>
-            </li>
-
-            <li class="nav-item">
-                <div class="navbar-heading">Data Master</div>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ Request::routeIs('material.category') ? 'active' : '' }}" href="{{ route('material.category') }}">
-                    <i class="nav-icon icon-xs me-2">🏷️</i> Kategori Material
-                </a>
             </li>
             @endif
 

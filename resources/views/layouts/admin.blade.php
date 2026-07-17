@@ -93,17 +93,66 @@
             color: #624bff !important; /* Teks berubah ke warna tema utama */
             font-weight: 500 !important;
         }
+       
+           /*📱 RESPONSIVE SIDEBAR (HAMBURGER MENU UNTUK LAYAR SEMPIT / HP)*/
+      @media (max-width: 991.98px) {
+            .navbar-vertical {
+                display: block !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                margin-left: 0 !important;
+                width: 260px !important;
+                height: 100vh !important;
+                z-index: 1040 !important;
+                transition: transform 0.25s ease-in-out !important;
+                overflow-y: auto !important;
+                background-color: #1a1d29 !important;
+                transform: translateX(-260px) !important;
+            }
+            .navbar-vertical.mobile-show {
+                margin-left: 0 !important;
+                transform: translateX(0) !important;
+            }
+            #sidebarOverlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.45);
+                z-index: 1035;
+            }
+            #sidebarOverlay.mobile-show {
+                display: block;
+            }
+            #page-content {
+                width: 100%;
+            }
+        }
+
+        #btnToggleSidebar {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            color: #334155;
+            margin-right: 0.75rem;
+            cursor: pointer;
+        }
+
     </style>
 </head>
 
 <body>
     <div id="db-wrapper">
         @include('layouts.sidebar')
+        <div id="sidebarOverlay" onclick="toggleSidebarMobile()"></div>
         
         <div id="page-content">
-            <nav class="navbar navbar-expand-lg navbar-white bg-white px-4 py-2 border-bottom shadow-sm">
+           <nav class="navbar navbar-expand-lg navbar-white bg-white px-4 py-2 border-bottom shadow-sm">
                 <div class="container-fluid">
-                    <span class="navbar-brand fw-bold text-primary mb-0 h1 fs-4">PKSD-Inventory</span>
+                    <button type="button" id="btnToggleSidebar" class="d-lg-none" onclick="toggleSidebarMobile()" aria-label="Buka menu">
+                        &#9776;
+                    </button>
+                    <span class="navbar-brand fw-bold text-primary mb-0 h1 fs-4">PKSD-Inventaris</span>
                     
                     <div class="ms-auto d-flex align-items-center">
                         <ul class="navbar-nav mb-0">
@@ -114,13 +163,13 @@
                                         <small class="text-muted fw-semi-bold">{{ ucfirst(Auth::user()->role) }}</small>
                                     </div>
                                     <div class="avatar avatar-md avatar-indicators avatar-online">
-                                        <img alt="avatar" src="{{ asset('dashui/assets/images/avatar/avatar-21.jpg') }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                        <img alt="avatar" src="{{ asset('dashui/assets/images/avatar/' . (Auth::user()->role === 'admin' ? 'avatar-8.jpg' : 'avatar-5.jpg')) }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
                                     </div>
                                 </a>
                                 
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdownProfile" style="min-width: 200px;">
                                     <li class="p-3 text-center">
-                                        <img alt="avatar" src="{{ asset('dashui/assets/images/avatar/avatar-21.jpg') }}" class="rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover;">
+                                        <img alt="avatar" src="{{ asset('dashui/assets/images/avatar/' . (Auth::user()->role === 'admin' ? 'avatar-8.jpg' : 'avatar-5.jpg')) }}" class="rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover;">
                                     </li>
                                     <li class="dropdown-header border-bottom pb-2 mb-2">
                                         <h6 class="mb-0 fw-bold text-dark">{{ Auth::user()->name }}</h6>
@@ -152,5 +201,12 @@
     <script src="{{ asset('dashui/assets/js/main.js') }}"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+    <script>
+        function toggleSidebarMobile() {
+            document.querySelector('.navbar-vertical').classList.toggle('mobile-show');
+            document.getElementById('sidebarOverlay').classList.toggle('mobile-show');
+        }
+    </script>
 </body>
 </html>

@@ -4,27 +4,22 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\MasterMaterialPembantu; 
+use App\Models\MutasiMaterialPembantu;
 use App\Models\Category;
-use App\Models\MutasiMaterialPembantu; 
 use Illuminate\Support\Facades\DB;
 
 class MaterialPembantuController extends Controller
 {
-    public function index()
-    {
-        // 1. Ambil kategori khusus kelompok Material Pembantu
-        $categories = Category::where('kelompok_material', 'Material Pembantu')->get();
+  public function index(Request $request)
+{
+    $categories = \App\Models\Category::where('kelompok_material', 'Material Pembantu')->get();
+    $materials = \App\Models\MasterMaterialPembantu::all();
 
-        // 2. Ambil data dari tabel master_material_pembantus
-        $materials = MasterMaterialPembantu::all();
+    // Ambil SEMUA riwayat — filter minggu/tanggal ditangani JS di sisi client
+    $mutasiks = \App\Models\MutasiMaterialPembantu::with('masterMaterialPembantu')->latest()->get();
 
-        // 3. Ambil data riwayat transaksi langsung dari tabel barunya secara utuh tanpa whereIn yang berat
-        $mutasiks = MutasiMaterialPembantu::with('masterMaterialPembantu')
-            ->latest()
-            ->get();
-
-        return view('admin.material.pembantu', compact('categories', 'materials', 'mutasiks'));
-    }
+    return view('admin.material.pembantu', compact('categories', 'materials', 'mutasiks'));
+}
 
     public function store(Request $request)
     { 

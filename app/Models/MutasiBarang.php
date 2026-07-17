@@ -22,6 +22,7 @@ class MutasiBarang extends Model
         'kuantitas',
         'tanggal',
         'spesifikasi_lokasi',
+        'lokasi_gudang',
         'qty_produksi',
         'qty_fisik',
         'satuan_fisik',
@@ -33,6 +34,11 @@ class MutasiBarang extends Model
         'keterangan'        
     ];
 
+  public function materialPembantu()
+{
+   
+    return $this->belongsTo(MutasiMaterialPembantu::class, 'id_mutasi_material_pembantu'); 
+}
     /**
      * Relasi ke Tabel Material Pokok
      */

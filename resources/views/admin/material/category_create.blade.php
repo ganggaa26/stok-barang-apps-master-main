@@ -30,7 +30,14 @@
                             <option value="Material Pembantu">Material Pembantu</option>
                         </select>
                     </div>
-
+                    <div class="col-12 col-md-6">
+                        <label for="kategori" class="form-label text-sm font-semibold text-slate-600 mb-2">
+                            Kategori<span class="text-danger">*</span>
+                        </label>
+                        <select name="kategori" id="kategori" class="form-select custom-input" required disabled>
+                            <option value="" disabled selected>-- Pilih Kelompok Material Dulu --</option>
+                        </select>
+                    </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label text-sm font-semibold text-slate-600 mb-2">Nama Sub-Kategori / Item Rumpun <span class="text-danger">*</span></label>
                         <select class="form-select custom-input" id="nama_kategori" name="nama_kategori" required disabled>
@@ -59,6 +66,7 @@
                         <option value="">-- Pilih Tipe Kalkulasi --</option>
                         <option value="volume_kayu">Volume Kayu (T x L x P, hasil M³)</option>
                         <option value="lembar_board">Lembar Board (Merk + Tebal mm)</option>
+                        <option value="lembar_hpl">Lembar HPL (Merk + Kode Warna)</option>
                         <option value="luas_veneer">Luas Veneer (L x P, hasil M²)</option>
                         <option value="volume_cairan">Volume Cairan (Merk + Jenis Kimia, Liter)</option>
                         <option value="konversi_amplas">Konversi Roll-Meter (Merk + Grit) — Amplas</option>
@@ -77,6 +85,7 @@
                         <select name="satuan_dasar" id="satuan_dasar" class="form-select custom-input" required>
                             <option value="" disabled selected>-- Pilih Satuan Pengukuran --</option>
                             <option value="M³">M³ (Kubik)</option>
+                            <option value="M²">M² (Luas)</option>
                             <option value="Lembar">Lembar</option>
                             <option value="Pcs">Pcs</option>
                             <option value="Kg">Kg</option>
@@ -87,7 +96,7 @@
                         <!-- Kotak input kustom dikondisikan default tanpa atribut name dan disabled -->
                         <div id="kotak_satuan_manual" class="mt-2" style="display: none;">
                             <label class="text-xs text-slate-500 mb-1">Ketik Satuan Manual:</label>
-                            <input type="text" id="satuan_kustom_input" class="form-control" placeholder="Contoh: Roll, Dus, dll." disabled>
+                            <input type="text" id="satuan_kustom_input" name="satuan_kustom_input" class="form-control" placeholder="Contoh: Roll, Dus, dll." disabled>
                         </div>
                     </div>
 
@@ -139,27 +148,70 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. Ambil elemen HTML asli terlebih dahulu
-    // 1. Ambil elemen HTML asli untuk sub-kategori
     const namaKategoriSelect = document.getElementById('nama_kategori');
-    
-    // 2. Buka kunci (disabled) HTML bawaan terlebih dahulu agar Tom Select tidak membeku
-    if (namaKategoriSelect) {
-        namaKategoriSelect.removeAttribute('disabled');
-    }
+    if (namaKategoriSelect) namaKategoriSelect.removeAttribute('disabled');
 
-    // 3. Inisialisasi Tom Select untuk Kelompok Material (Urutan mengikuti HTML asli: Pokok lalu Pembantu)
-    var tsKelompok = new TomSelect('#kelompok_material', {
-        create: false
-    });
-
-    // 4. Inisialisasi Tom Select untuk Sub-Kategori (Menggunakan ID huruf k kecil)
+    var tsKelompok = new TomSelect('#kelompok_material', { create: false });
+    var tsKategori = new TomSelect('#kategori', {
+    create: true,
+    createOnBlur: true
+});
     var tsCategory = new TomSelect('#nama_kategori', {
-        create: true, 
+        create: true,
         placeholder: "🔍 Pilih atau Ketik Sub-Kategori Baru..."
     });
 
-    // 5. Logika Menampilkan Kotak Rumus Custom secara Dinamis
+    // Data dari controller
+    const daftarKategoriPerKelompok = {!! json_encode($daftarKategori) !!};
+    const allSubCategories = {!! json_encode($subCategories->map(function($s){
+        return ['nama' => $s->nama_kategori, 'kategori' => $s->kategori, 'kelompok' => $s->kelompok_material];
+    })) !!};
+
+    // 1. Saat Kelompok Material dipilih -> isi opsi Kategori
+    tsKelompok.on('change', function(value) {
+        tsKategori.clear();
+        tsKategori.clearOptions();
+        tsCategory.clear();
+        tsCategory.clearOptions();
+
+        if (!value) {
+            tsKategori.disable();
+            tsCategory.disable();
+            return;
+        }
+
+        const opsiKategori = daftarKategoriPerKelompok[value] || [];
+        opsiKategori.forEach(k => tsKategori.addOption({ value: k, text: k }));
+        tsKategori.refreshOptions(false);
+        tsKategori.enable();
+
+        tsCategory.disable(); // sub-kategori nunggu kategori dipilih
+    });
+
+    // 2. Saat Kategori dipilih -> isi opsi Sub-Kategori yang relevan + boleh ketik baru
+    tsKategori.on('change', function(value) {
+        tsCategory.clear();
+        tsCategory.clearOptions();
+
+        if (!value) {
+            tsCategory.disable();
+            return;
+        }
+
+        const kelompokAktif = tsKelompok.getValue();
+        allSubCategories
+            .filter(item => item.kategori === value && item.kelompok === kelompokAktif)
+            .forEach(item => tsCategory.addOption({ value: item.nama, text: item.nama }));
+
+        tsCategory.refreshOptions(false);
+        tsCategory.enable();
+    });
+
+    // Kondisi awal: Kategori & Sub-Kategori dikunci sampai Kelompok dipilih
+    tsKategori.disable();
+    tsCategory.disable();
+
+    // --- Logika Rumus Custom & Satuan Manual (TETAP SAMA, tidak berubah) ---
     const tipeKalkulasi = document.getElementById('tipe_kalkulasi');
     const kotakRumusCustom = document.getElementById('kotak_rumus_custom');
     const rumusCustomInput = document.getElementById('rumus_custom_input');
@@ -179,7 +231,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // 6. Logika Menampilkan Kotak Satuan Manual secara Dinamis
     const satuanDasar = document.getElementById('satuan_dasar');
     const kotakSatuanManual = document.getElementById('kotak_satuan_manual');
     const satuanKustomInput = document.getElementById('satuan_kustom_input');

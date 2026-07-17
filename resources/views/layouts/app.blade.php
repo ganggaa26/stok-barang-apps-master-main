@@ -32,5 +32,16 @@
                 {{ $slot }}
             </main>
         </div>
+        <script>
+    // Kita buat fungsi global (window) sebagai jembatan agar HTML bisa memanggilnya
+    window.updateItemDropdown = function(element) {
+        // Cek apakah fungsi asli di main.js sudah siap
+        if (typeof window.actualUpdateItemDropdown === 'function') {
+            window.actualUpdateItemDropdown(element);
+        } else {
+            console.warn("Menunggu sistem memuat komponen dropdown...");
+        }
+    };
+</script>
     </body>
 </html>
