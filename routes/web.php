@@ -7,6 +7,7 @@ use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MaterialPembantuController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LaporanController; 
+use App\Http\Controllers\UserController;
 use App\Models\MutasiBarang;
 
 Route::get('/', function () {
@@ -20,9 +21,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+    Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
 
     // --- DASHBOARD ---
-Route::get('/dashboard', function () {
+    Route::get('/dashboard', function () {
     // Total material = Pokok + Pembantu
     $totalMaterial = DB::table('materials')->count()
         + DB::table('master_material_pembantus')->count();
@@ -157,7 +160,16 @@ Route::get('/dashboard', function () {
         Route::get('/material/category/{id}/edit', [CategoryController::class, 'edit'])->name('material.category.edit');
         Route::put('/material/category/{id}', [CategoryController::class, 'update'])->name('material.category.update');
         Route::delete('/material/category/{id}', [CategoryController::class, 'destroy'])->name('material.category.destroy');
+
+        // --- KELOLA PENGGUNA (khusus admin) ---
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
+
 
     // --- PELAPORAN (DIALIKHAN KE LAPORAN CONTROLLER AGAR REAL-TIME & BISA FILTER) ---
     

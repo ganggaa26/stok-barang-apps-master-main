@@ -138,6 +138,25 @@
             cursor: pointer;
         }
 
+        .profile-dropdown {
+            min-width: 260px;
+            border-radius: 12px;
+            padding: 0;
+            overflow: hidden;
+        }
+        .profile-dropdown-avatar {
+            border: 3px solid #f1f5f9;
+        }
+        .profile-dropdown .dropdown-item {
+            font-size: 0.875rem;
+            transition: background-color 0.15s ease;
+        }
+        .profile-dropdown .dropdown-item:hover {
+            background-color: #f8fafc;
+        }
+        .profile-toggle:hover .avatar img {
+            box-shadow: 0 0 0 2px #624bff;
+        }
     </style>
 </head>
 
@@ -156,35 +175,55 @@
                     
                     <div class="ms-auto d-flex align-items-center">
                         <ul class="navbar-nav mb-0">
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle d-flex align-items-center text-gray-800" href="#" id="navbarDropdownProfile" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <div class="text-end me-3 d-none d-sm-block">
-                                        <h6 class="mb-0 fw-bold text-dark">{{ Auth::user()->name }}</h6>
-                                        <small class="text-muted fw-semi-bold">{{ ucfirst(Auth::user()->role) }}</small>
-                                    </div>
-                                    <div class="avatar avatar-md avatar-indicators avatar-online">
-                                        <img alt="avatar" src="{{ asset('dashui/assets/images/avatar/' . (Auth::user()->role === 'admin' ? 'avatar-8.jpg' : 'avatar-5.jpg')) }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
-                                    </div>
-                                </a>
-                                
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdownProfile" style="min-width: 200px;">
-                                    <li class="p-3 text-center">
-                                        <img alt="avatar" src="{{ asset('dashui/assets/images/avatar/' . (Auth::user()->role === 'admin' ? 'avatar-8.jpg' : 'avatar-5.jpg')) }}" class="rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover;">
-                                    </li>
-                                    <li class="dropdown-header border-bottom pb-2 mb-2">
-                                        <h6 class="mb-0 fw-bold text-dark">{{ Auth::user()->name }}</h6>
-                                        <small class="text-muted">{{ Auth::user()->email }}</small>
-                                    </li>
-                                    <li>
-                                        <form action="{{ route('logout') }}" method="POST" class="m-0 p-0">
-                                            @csrf
-                                            <button type="submit" class="dropdown-item text-danger fw-bold d-flex align-items-center border-0 bg-transparent w-100 py-2">
-                                                <span class="me-2">Keluar Aplikasi</span> 
-                                            </button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </li>
+                                    @php
+            $avatarUrl = Auth::user()->avatar
+                ? asset('storage/' . Auth::user()->avatar)
+                : asset('dashui/assets/images/avatar/' . (Auth::user()->role === 'admin' ? 'avatar-8.jpg' : 'avatar-5.jpg'));
+        @endphp
+
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center text-gray-800 profile-toggle" href="#" id="navbarDropdownProfile" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="text-end me-3 d-none d-sm-block">
+                    <h6 class="mb-0 fw-bold text-dark">{{ Auth::user()->name }}</h6>
+                    <small class="text-muted fw-semi-bold">{{ ucfirst(Auth::user()->role) }}</small>
+                </div>
+                <div class="avatar avatar-md avatar-indicators avatar-online">
+                    <img alt="avatar" src="{{ $avatarUrl }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                </div>
+            </a>
+
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 profile-dropdown" aria-labelledby="navbarDropdownProfile">
+                <li class="text-center pt-4 pb-3 px-3">
+                    <img alt="avatar" src="{{ $avatarUrl }}" class="rounded-circle mb-3 profile-dropdown-avatar" style="width: 72px; height: 72px; object-fit: cover;">
+                    <h6 class="mb-0 fw-bold text-dark">{{ Auth::user()->name }}</h6>
+                    <small class="text-muted d-block mb-1">{{ Auth::user()->email }}</small>
+                    <span class="badge {{ Auth::user()->role === 'admin' ? 'bg-primary' : 'bg-secondary' }}">
+                        {{ ucfirst(Auth::user()->role) }}
+                    </span>
+                </li>
+
+                <li><hr class="dropdown-divider my-2"></li>
+
+                <li>
+                    <a href="{{ route('profile.edit') }}" class="dropdown-item d-flex align-items-center py-2">
+                        <i data-feather="user" style="width:16px;height:16px;" class="me-2 text-muted"></i>
+                        Edit Profil
+                    </a>
+                </li>
+
+                <li><hr class="dropdown-divider my-2"></li>
+
+                <li>
+                    <form action="{{ route('logout') }}" method="POST" class="m-0 p-0">
+                        @csrf
+                        <button type="submit" class="dropdown-item text-danger fw-semibold d-flex align-items-center border-0 bg-transparent w-100 py-2">
+                            <i data-feather="log-out" style="width:16px;height:16px;" class="me-2"></i>
+                            Keluar Aplikasi
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
                         </ul>
                     </div>
                 </div>

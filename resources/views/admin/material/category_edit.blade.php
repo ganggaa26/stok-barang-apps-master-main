@@ -93,6 +93,20 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
+                             <div class="col-4">
+                                <div class="input-group">
+                                    <span class="input-group-text text-muted">Min</span>
+                                    <input type="number" step="0.0001" min="0"
+                                        name="items[{{ $item->id }}][stok_minimum]"
+                                        value="{{ old('items.'.$item->id.'.stok_minimum', $item->stok_minimum) }}"
+                                        class="form-control @error('items.'.$item->id.'.stok_minimum') is-invalid @enderror"
+                                        required>
+                                </div>
+                                @error('items.'.$item->id.'.stok_minimum')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
                         @empty
                             <p class="text-muted fst-italic">Belum ada item material di kategori ini.</p>
                         @endforelse

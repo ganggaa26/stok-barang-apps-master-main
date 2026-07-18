@@ -60,6 +60,8 @@ public function store(Request $request)
         'satuan_kustom_input'  => 'required_if:satuan_dasar,MANUAL|nullable|string|max:50',
         'nama_item_fisik'      => 'required|string|max:255',
         'tipe_kalkulasi'       => 'required|string|max:255',
+        'rumus_custom'         => 'required_if:tipe_kalkulasi,CUSTOM_RUMUS|nullable|string|max:255',
+        'stok_minimum'         => 'required|numeric|min:0',
     ]);
 
     $satuanFinal = $request->satuan_dasar === 'MANUAL'
@@ -76,6 +78,7 @@ public function store(Request $request)
             [
                 'satuan_dasar'   => $satuanFinal,
                 'tipe_kalkulasi' => $request->tipe_kalkulasi,
+                'rumus_custom'   => $request->tipe_kalkulasi === 'CUSTOM_RUMUS' ? $request->rumus_custom : null,
             ]
         );
 
@@ -91,7 +94,7 @@ public function store(Request $request)
                 'tipe_kalkulasi' => $request->tipe_kalkulasi,
                 'satuan'         => $satuanFinal,
                 'stok_sekarang'  => 0,
-                'stok_minimum'   => 0,
+                'stok_minimum'   => $request->stok_minimum,
             ]);
         } else {
             MasterMaterialPembantu::create([
@@ -101,7 +104,7 @@ public function store(Request $request)
                 'tipe_kalkulasi' => $request->tipe_kalkulasi,
                 'satuan'         => $satuanFinal,
                 'stok_sekarang'  => 0,
-                'stok_minimum'   => 0,
+                'stok_minimum'   => $request->stok_minimum,
             ]);
         }
     });
@@ -135,11 +138,12 @@ public function store(Request $request)
 public function update(Request $request, $id)
 {
     $request->validate([
-        'nama_Kategori'          => 'required|string|max:255',
-        'kategori'               => 'required|string|max:255',
-        'satuan_dasar'           => 'required|string|max:50',
-        'items'                  => 'nullable|array',
-        'items.*.nama_material'  => 'required|string|max:255',
+        'nama_Kategori'              => 'required|string|max:255',
+        'kategori'                   => 'required|string|max:255',
+        'satuan_dasar'               => 'required|string|max:50',
+        'items'                      => 'nullable|array',
+        'items.*.nama_material'      => 'required|string|max:255',
+        'items.*.stok_minimum'       => 'required|numeric|min:0',
     ]);
 
     $category = Category::findOrFail($id);
@@ -155,14 +159,19 @@ public function update(Request $request, $id)
             $isPokok = str_contains(strtolower($category->kelompok_material), 'pokok');
 
             foreach ($request->items as $itemId => $itemData) {
+                $updateData = [
+                    'nama_material' => $itemData['nama_material'],
+                    'stok_minimum'  => $itemData['stok_minimum'],
+                ];
+
                 if ($isPokok) {
                     Material::where('id', $itemId)
                         ->where('category_id', $category->id)
-                        ->update(['nama_material' => $itemData['nama_material']]);
+                        ->update($updateData);
                 } else {
                     MasterMaterialPembantu::where('id', $itemId)
                         ->where('category_id', $category->id)
-                        ->update(['nama_material' => $itemData['nama_material']]);
+                        ->update($updateData);
                 }
             }
         }

@@ -43,9 +43,9 @@
                         <select class="form-select custom-input" id="nama_kategori" name="nama_kategori" required disabled>
                             <option value="" disabled selected>-- Pilih atau Ketik Sub-Kategori Baru --</option>
                             @if(isset($subCategories) && $subCategories->count() > 0)
-                                @foreach($subCategories as $sub)
-                                    <option value="{{ $sub->nama_Kategori }}">{{ $sub->nama_Kategori }}</option>
-                                @endforeach
+                               @foreach($subCategories as $sub)
+                                <option value="{{ $sub->nama_kategori }}">{{ $sub->nama_kategori }}</option>
+                            @endforeach
                             @endif
                         </select>
                     </div>
@@ -75,8 +75,17 @@
                         
                         <div id="kotak_rumus_custom" class="mt-2 card p-3 shadow-sm border-dashed" style="display: none; background-color: #f8fafc;">
                             <label class="text-xs font-semibold text-slate-500 mb-1">Masukkan Rumus Custom:</label>
-                            <input type="text" id="rumus_custom_input" class="form-control" style="font-family: monospace;" placeholder="Contoh: panjang * lebar * tinggi">
+                            <input type="text" id="rumus_custom_input"  name="rumus_custom" class="form-control" style="font-family: monospace;" placeholder="Contoh: panjang * lebar * tinggi">
                         </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="stok_minimum" class="form-label text-sm font-semibold text-slate-600 mb-2">
+                            Stok Minimum <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" step="0.0001" min="0" name="stok_minimum" id="stok_minimum"
+                            class="form-control custom-input" placeholder="Contoh: 5" value="0" required>
+                        <small class="text-muted">Ambang batas untuk peringatan "butuh restock" di dashboard.</small>
                     </div>
                     </div>
 

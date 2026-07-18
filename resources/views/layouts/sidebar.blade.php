@@ -50,6 +50,15 @@
                     </ul>
                 </div>
             </li>
+
+              <li class="nav-item">
+                <div class="navbar-heading">Administrasi</div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ Request::routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
+                    <i class="nav-icon icon-xs me-2">👤</i> Kelola Pengguna
+                </a>
+            </li>
             @endif
 
             <li class="nav-item">
