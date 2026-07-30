@@ -23,6 +23,12 @@
         </div>
     @endif
 
+    @if(session('error'))
+    <div class="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl p-4 shadow-sm">
+        {{ session('error') }}
+    </div>
+    @endif
+
     {{-- FORM UTAMA --}}
     <form action="{{ route('material.pembantu.store') }}" method="POST" id="formBahanPembantu" class="space-y-6">
         @csrf
@@ -371,8 +377,11 @@
     }
 
     function keFormatISO(d) {
-        return d.toISOString().split('T')[0];
-    }
+    const tahun = d.getFullYear();
+    const bulan = String(d.getMonth() + 1).padStart(2, '0');
+    const hari = String(d.getDate()).padStart(2, '0');
+    return `${tahun}-${bulan}-${hari}`;
+}
 
     function hitungRentangTanggal(mode) {
         const sekarang = new Date();

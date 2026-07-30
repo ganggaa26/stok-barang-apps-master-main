@@ -49,12 +49,9 @@
 </div>
 
 <script>
-const daftarKategoriPerKelompok = @json([
-    'pokok' => \App\Models\Category::where('kelompok_material', 'LIKE', '%pokok%')->get(['id','nama_Kategori']),
-    'pembantu' => \App\Models\Category::where('kelompok_material', 'Material Pembantu')->get(['id','nama_Kategori']),
-]);
-const semuaMaterialPokok = @json(\App\Models\Material::all(['id','nama_material','category_id']));
-const semuaMaterialPembantu = @json(\App\Models\MasterMaterialPembantu::all(['id','nama_material','category_id']));
+const daftarKategoriPerKelompok = @json($daftarKategoriPerKelompok);
+const semuaMaterialPokok = @json($semuaMaterialPokok);
+const semuaMaterialPembantu = @json($semuaMaterialPembantu);
 
 document.getElementById('kelompok_material').addEventListener('change', function() {
     const catSelect = document.getElementById('category_id');

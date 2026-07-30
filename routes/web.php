@@ -9,6 +9,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LaporanController; 
 use App\Http\Controllers\UserController;
 use App\Models\MutasiBarang;
+use App\Http\Controllers\ImportController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -54,18 +55,39 @@ Route::middleware('auth')->group(function () {
             ->whereYear('tanggal', now()->year)
             ->count();
 
+            // Ambil spesifikasi transaksi TERAKHIR per material (Material Pokok)
+        $latestIdPokok = DB::table('mutasi_barangs')
+            ->select('material_id', DB::raw('MAX(id) as max_id'))
+            ->groupBy('material_id');
+        $spekPokokMap = DB::table('mutasi_barangs')
+            ->joinSub($latestIdPokok, 'latest', fn($j) => $j->on('mutasi_barangs.id', '=', 'latest.max_id'))
+            ->pluck('spesifikasi_lokasi', 'mutasi_barangs.material_id');
+
+        // Ambil spesifikasi transaksi TERAKHIR per material (Material Pembantu)
+        $latestIdPembantu = DB::table('mutasi_material_pembantus')
+            ->select('material_pembantu_id', DB::raw('MAX(id) as max_id'))
+            ->groupBy('material_pembantu_id');
+        $spekPembantuMap = DB::table('mutasi_material_pembantus')
+            ->joinSub($latestIdPembantu, 'latest', fn($j) => $j->on('mutasi_material_pembantus.id', '=', 'latest.max_id'))
+            ->pluck('spesifikasi', 'mutasi_material_pembantus.material_pembantu_id');
+
    $menipisPokok = DB::table('materials')
     ->leftJoin('categories', 'materials.category_id', '=', 'categories.id')
     ->select('materials.*', 'categories.nama_Kategori as kategori_nama')
     ->where('materials.stok_sekarang', '<=', 0)
-    ->get();
+    ->get()
+    ->map(function ($item) use ($spekPokokMap) {
+        $item->spesifikasi_detail = $spekPokokMap[$item->id] ?? null;
+        return $item;
+    });
 
     $menipisPembantu = DB::table('master_material_pembantus')
         ->leftJoin('categories', 'master_material_pembantus.category_id', '=', 'categories.id')
         ->select('master_material_pembantus.*', 'categories.nama_Kategori as kategori_nama')
         ->where('master_material_pembantus.stok_sekarang', '<=', 0)
         ->get()
-        ->map(function ($item) {
+        ->map(function ($item) use ($spekPembantuMap) {
+            $item->spesifikasi_detail = $spekPembantuMap[$item->id] ?? null;
             $item->size = null;
             $item->kualitas = null;
             $item->lokasi_gudang = null;
@@ -161,6 +183,10 @@ Route::middleware('auth')->group(function () {
         Route::put('/material/category/{id}', [CategoryController::class, 'update'])->name('material.category.update');
         Route::delete('/material/category/{id}', [CategoryController::class, 'destroy'])->name('material.category.destroy');
 
+        // --- KHUSUS ADMIN: IMPORT EXCEL ---
+    Route::get('/material/import', [ImportController::class, 'form'])->name('material.import.form');
+    Route::post('/material/import', [ImportController::class, 'store'])->name('material.import.store');
+
         // --- KELOLA PENGGUNA (khusus admin) ---
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
@@ -182,5 +208,7 @@ Route::middleware('auth')->group(function () {
     // 3. Jalur Jurnal Laporan Barang Keluar
     Route::get('/laporan/barang-keluar', [LaporanController::class, 'barangKeluar'])->name('laporan.keluar'); 
 });
+
+
 
 require __DIR__.'/auth.php';

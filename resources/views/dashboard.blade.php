@@ -193,7 +193,7 @@
                                     <th class="ps-4">Kode</th>
                                     <th>Nama Bahan Baku</th>
                                     <th>Jenis</th>
-                                    <th>Kualitas</th>
+                                    <th>Spesifikasi Detail</th>
                                     <th>Sisa Stok</th>
                                     <th>Stok Minimum</th>
                                     <th>Selisih</th>
@@ -209,11 +209,19 @@
                                         <td class="ps-4 fw-bold">{{ $item->kode_material }}</td>
                                         <td class="fw-semibold">{{ $item->nama_material }}</td>
                                         <td>{{ $item->jenis_material ?? $item->kategori_nama ?? '-' }}</td>
-                                        <td>{{ $item->kualitas ?? '-' }}</td>
+                                        <td class="text-truncate" style="max-width: 220px;" title="{{ $item->spesifikasi_detail ?? '-' }}">
+                                            {{ $item->spesifikasi_detail ?? '-' }}
+                                        </td>
                                         <td class="text-danger-bold">{{ number_format($item->stok_sekarang, 6) }}</td>
                                         <td class="text-muted">{{ number_format($item->stok_minimum, 4) }}</td>
                                         <td class="text-danger-bold">-{{ number_format($item->stok_minimum - $item->stok_sekarang, 4) }}</td>
-                                        <td><span class="badge badge-soft-danger">Butuh Restock</span></td>
+                                       <td>
+                                        @if($item->stok_sekarang <= 0)
+                                            <span class="badge rounded-pill bg-danger">Stok Habis</span>
+                                        @else
+                                            <span class="badge rounded-pill bg-warning text-dark">Butuh Restock</span>
+                                        @endif
+                                    </td>
                                     </tr>
                                 @empty
                                     <tr>

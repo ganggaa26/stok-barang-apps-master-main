@@ -39,6 +39,15 @@ class MaterialPembantuController extends Controller
             'asal_atau_proyek'     => 'nullable|string|max:255',
         ]);
 
+         if ($request->jenis_transaksi === 'Barang Keluar') {
+        $materialCek = MasterMaterialPembantu::findOrFail($request->material_pembantu_id);
+        if ($request->kuantitas > $materialCek->stok_sekarang) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Stok tidak mencukupi. Stok tersedia saat ini: ' . number_format($materialCek->stok_sekarang, 2));
+        }
+    }
+
         $spesifikasiMurni = $request->spesifikasi ?? '-';
 
         DB::transaction(function () use ($request, $spesifikasiMurni) {
@@ -78,6 +87,25 @@ class MaterialPembantuController extends Controller
             'spesifikasi'          => 'nullable|string|max:255',
             'merk'                 => 'nullable|string|max:255',
         ]);
+
+          $log = MutasiMaterialPembantu::findOrFail($id);
+    if ($request->jenis_transaksi === 'Barang Keluar') {
+        $materialCek = MasterMaterialPembantu::findOrFail($request->material_pembantu_id);
+        $stokTersedia = $materialCek->stok_sekarang;
+
+        // Kembalikan dulu efek transaksi LAMA sebelum dibandingkan
+        if ($log->jenis_transaksi === 'Barang Keluar') {
+            $stokTersedia += $log->kuantitas;
+        } else {
+            $stokTersedia -= $log->kuantitas;
+        }
+
+        if ($request->kuantitas > $stokTersedia) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Stok tidak mencukupi. Stok tersedia: ' . number_format($stokTersedia, 2));
+        }
+    }
 
         $spesifikasiMurni = $request->spesifikasi ?? '-';
 

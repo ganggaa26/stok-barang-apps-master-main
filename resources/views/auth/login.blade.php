@@ -67,12 +67,6 @@
                                 {{ __('Masuk ke Sistem') }}
                             </button>
                         </div>
-
-                        <div class="text-center">
-                            <p class="mb-0 text-muted">Belum punya akun? 
-                                <a href="{{ route('register') }}" class="fw-bold text-decoration-none">Daftar sekarang</a>
-                            </p>
-                        </div>
                     </form>
                 </div>
             </div>

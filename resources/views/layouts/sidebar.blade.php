@@ -26,16 +26,16 @@
             </li>
 
             <li class="nav-item">
-                <a class="nav-link {{ Request::is('material/pokok') || Request::is('material/pembantu') ? 'active' : 'collapsed' }}" 
+                <a class="nav-link {{ Request::is('material/pokok') || Request::is('material/pembantu') || Request::is('material/import') ? 'active' : 'collapsed' }}" 
                 href="#!" 
                 data-bs-toggle="collapse" 
                 data-bs-target="#navBahanBaku" 
-                aria-expanded="{{ Request::is('material/pokok') || Request::is('material/pembantu') ? 'true' : 'false' }}" 
+                aria-expanded="{{ Request::is('material/pokok') || Request::is('material/pembantu') || Request::is('material/import') ? 'true' : 'false' }}" 
                 aria-controls="navBahanBaku">
                     <i class="nav-icon icon-xs me-2">📦</i> Input Stok
                 </a>
                 <div id="navBahanBaku" 
-                class="collapse {{ Request::is('material/pokok') || Request::is('material/pembantu') ? 'show' : '' }}">
+                class="collapse {{ Request::is('material/pokok') || Request::is('material/pembantu') || Request::is('material/import') ? 'show' : '' }}">
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('material/pokok') ? 'active fw-bold' : '' }}" href="{{ route('material.pokok') }}">
@@ -45,6 +45,11 @@
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('material/pembantu') ? 'active fw-bold' : '' }}" href="{{ route('material.pembantu') }}">
                                 Material Pembantu
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ Request::is('material/import') ? 'active fw-bold' : '' }}" href="{{ route('material.import.form') }}">
+                                Import dari Excel
                             </a>
                         </li>
                     </ul>

@@ -78,6 +78,12 @@
             {{ session('success') }}
         </div>
     @endif
+      @if(session('error'))
+        <div class="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg p-4 mb-4">
+            {{ session('error') }}
+        </div>
+    @endif
+
 
     <div class="space-y-6">
         <form id="formBahanPokok" action="{{ route('material.pokok.store') }}" method="POST" class="space-y-6" onsubmit="return siapkanSubmitPokok()">
@@ -163,6 +169,7 @@
                     </div>
                 </div>
             </div>
+
 
             <div class="flex justify-end items-center gap-3 pt-2">
                 <button type="button" id="btnBatalEdit" onclick="batalkanEdit()" class="hidden text-sm font-medium text-slate-500 hover:text-slate-700 px-4 py-2.5">
@@ -571,7 +578,10 @@ function toggleFilterPanel() {
 }
 
 function keFormatISO(d) {
-    return d.toISOString().split('T')[0];
+    const tahun = d.getFullYear();
+    const bulan = String(d.getMonth() + 1).padStart(2, '0');
+    const hari = String(d.getDate()).padStart(2, '0');
+    return `${tahun}-${bulan}-${hari}`;
 }
 
 function hitungRentangTanggal(mode) {
